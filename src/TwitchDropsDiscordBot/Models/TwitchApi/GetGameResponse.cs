@@ -12,9 +12,16 @@ namespace TwitchDropsDiscordBot.Models.TwitchApi;
 [SuppressMessage("ReSharper", "InvalidXmlDocComment")]
 public sealed class GetGameResponse
 {
+    /// <summary>
+    /// The GameId for the requested game.
+    /// </summary>
     [JsonPropertyName("id")]
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
     public uint Id { get; set; }
 
+    /// <summary>
+    /// The Name of the requested game.
+    /// </summary>
     [JsonPropertyName("name")]
     public string Name { get; set; }
 
