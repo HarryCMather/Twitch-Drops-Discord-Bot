@@ -14,10 +14,10 @@ internal static class Program
         builder.Services.AddSingleton<SettingsFileRepository>()
                         .AddSingleton<TimeProvider>(TimeProvider.System)
                         .AddMemoryCache()
-                        .AddHttpClient<TwitchApiClient>()
+                        .AddHttpClient<SunkwiApiClient>()
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
-        builder.Services.AddScoped<TwitchApiClient>()
+        builder.Services.AddScoped<SunkwiApiClient>()
                         .AddScoped<TwitchAuthorizationService>()
                         .AddScoped<TwitchGameIdFinderService>()
                         .AddScoped<TwitchStreamsFinderService>()
