@@ -6,5 +6,6 @@
     "Phasmophobia",
     "World of Tanks",
     "Counter-Strike"
-  ]
+  ],
+  "DelayBetweenChecksInMinutes": 15
 }
