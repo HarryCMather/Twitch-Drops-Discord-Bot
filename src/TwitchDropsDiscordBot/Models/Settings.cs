@@ -22,4 +22,9 @@ public sealed class Settings
     /// For example, https://www.twitch.tv/directory/category/tom-clancys-rainbow-six-siege has the exact title of "Tom Clancy's Rainbow Six Siege X".
     /// </summary>
     public IReadOnlyCollection<string> GameNames { get; set; }
+
+    /// <summary>
+    /// The number of minutes to sleep before checking for more drops.
+    /// </summary>
+    public uint DelayBetweenChecksInMinutes { get; set; }
 }

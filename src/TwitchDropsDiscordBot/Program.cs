@@ -1,9 +1,32 @@
-﻿namespace TwitchDropsDiscordBot;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using TwitchDropsDiscordBot.Persistence;
+using TwitchDropsDiscordBot.Services;
 
-class Program
+namespace TwitchDropsDiscordBot;
+
+internal static class Program
 {
-    private static void Main()
+    private static async Task Main()
     {
-        Console.WriteLine("Hello, World!");
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+
+        builder.Services.AddSingleton<SettingsFileRepository>()
+                        .AddSingleton<TimeProvider>(TimeProvider.System)
+                        .AddMemoryCache()
+                        .AddHttpClient<TwitchApiClient>()
+                        .SetHandlerLifetime(TimeSpan.FromMinutes(1));
+
+        builder.Services.AddScoped<TwitchApiClient>()
+                        .AddScoped<TwitchAuthorizationService>()
+                        .AddScoped<TwitchGameIdFinderService>()
+                        .AddScoped<TwitchStreamsFinderService>()
+                        .AddScoped<TwitchDropFinderService>();
+
+        builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
+
+        IHost host = builder.Build();
+
+        await host.RunAsync();
     }
 }
