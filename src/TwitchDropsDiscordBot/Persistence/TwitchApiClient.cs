@@ -1,7 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.TwitchApi;
 
 namespace TwitchDropsDiscordBot.Persistence;
@@ -9,17 +8,15 @@ namespace TwitchDropsDiscordBot.Persistence;
 public sealed class TwitchApiClient
 {
     private readonly HttpClient _httpClient;
-    private readonly Settings _settings;
 
-    public TwitchApiClient(HttpClient httpClient, Settings settings)
+    public TwitchApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _settings = settings;
     }
 
-    public async Task<TokenResponse> GetAccessTokenAsync()
+    public async Task<TokenResponse> GetAccessTokenAsync(string clientId, string clientSecret)
     {
-        string requestUrl = $"https://id.twitch.tv/oauth2/token?client_id={_settings.ClientId}&client_secret={_settings.ClientSecret}&grant_type=client_credentials";
+        string requestUrl = $"https://id.twitch.tv/oauth2/token?client_id={clientId}&client_secret={clientSecret}&grant_type=client_credentials";
 
         using (HttpResponseMessage response = await _httpClient.PostAsync(requestUrl, null))
         {
@@ -28,7 +25,7 @@ public sealed class TwitchApiClient
         }
     }
 
-    public async Task<List<GetGameResponse>> GetGamesAsync(TokenResponse tokenResponse)
+    public async Task<List<GetGameResponse>> GetGamesAsync(string clientId, TokenResponse tokenResponse, IReadOnlyCollection<string> gameNames)
     {
         string requestUrl = "https://api.twitch.tv/helix/games";
 
@@ -36,7 +33,7 @@ public sealed class TwitchApiClient
         // If you wanted to query multiple games with the names of "Game1", "Game2" and "Game3", you need to append this to the requestUrl as:
         // ?name=Game1&name=Game2&name=Game3
         // Therefore, this is replicated below:
-        foreach (string gameName in _settings.GameNames)
+        foreach (string gameName in gameNames)
         {
             if (!requestUrl.Contains("?name="))
             {
@@ -49,10 +46,10 @@ public sealed class TwitchApiClient
         }
 
         string[] jsonPropertiesToRetrieve = [ "data" ];
-        return await GetFromTwitchAsync<List<GetGameResponse>>(requestUrl, tokenResponse, jsonPropertiesToRetrieve);
+        return await GetFromTwitchAsync<List<GetGameResponse>>(requestUrl, clientId, tokenResponse, jsonPropertiesToRetrieve);
     }
 
-    public async Task<GetStreamsResponse> GetStreamsAsync(TokenResponse tokenResponse, uint gameId, string afterCursor = null)
+    public async Task<GetStreamsResponse> GetStreamsAsync(string clientId, TokenResponse tokenResponse, uint gameId, string afterCursor = null)
     {
         string requestUrl = $"https://api.twitch.tv/helix/streams?game_id={gameId}&first=100&type=live";
 
@@ -61,15 +58,15 @@ public sealed class TwitchApiClient
             requestUrl += $"&after={afterCursor}";
         }
 
-        return await GetFromTwitchAsync<GetStreamsResponse>(requestUrl, tokenResponse);
+        return await GetFromTwitchAsync<GetStreamsResponse>(requestUrl, clientId, tokenResponse);
     }
 
-    private async Task<TResponse> GetFromTwitchAsync<TResponse>(string requestUrl, TokenResponse tokenResponse, string[] jsonPropertiesToRetrieve = null)
+    private async Task<TResponse> GetFromTwitchAsync<TResponse>(string requestUrl, string clientId, TokenResponse tokenResponse, string[] jsonPropertiesToRetrieve = null)
     {
         using (HttpRequestMessage request = new(HttpMethod.Get, requestUrl))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(tokenResponse.TokenType, tokenResponse.AccessToken);
-            request.Headers.Add("Client-Id", _settings.ClientId);
+            request.Headers.Add("Client-Id", clientId);
 
             using (HttpResponseMessage response = await _httpClient.SendAsync(request))
             {
