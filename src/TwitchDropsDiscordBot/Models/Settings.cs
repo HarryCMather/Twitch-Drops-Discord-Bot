@@ -14,7 +14,7 @@ public sealed class Settings
     /// <summary>
     /// The Discord ChannelID of the text channel where you want the notifications to be sent.
     /// </summary>
-    public string DiscordChannelId { get; set; }
+    public ulong DiscordChannelId { get; set; }
 
     /// <summary>
     /// A list of game names to look for drops for.
