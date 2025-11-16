@@ -19,7 +19,7 @@ After=network.target
 Type=simple
 User=user
 WorkingDirectory=/path/to/working/directory/for/TwitchDropsDiscordBot
-ExecStart='/path/to/working/directory/for/TwitchDropsDiscordBot/TwitchDropsDiscordBot'
+ExecStart='/path/to/working/directory/for/TwitchDropsDiscordBot/TwitchDropsDiscordBot/TwitchDropsDiscordBot'
 Restart=on-failure
 
 [Install]
