@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TwitchDropsDiscordBot.Models;
+using TwitchDropsDiscordBot.Models.SunkwiApi;
 using TwitchDropsDiscordBot.Persistence;
 
 namespace TwitchDropsDiscordBot.Services;
@@ -25,7 +26,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
             using (IServiceScope scope = _serviceScopeFactory.CreateScope())
             {
                 TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
+                List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
 
                 Console.WriteLine($"Waiting for {settings.DelayBetweenChecksInMinutes} minutes before checking for new drops again.");
                 await Task.Delay(TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes), stoppingToken);
