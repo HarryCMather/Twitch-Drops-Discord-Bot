@@ -23,8 +23,10 @@ internal static class Program
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
         builder.Services.AddScoped<SunkwiApiClient>()
+                        .AddScoped<DiscordBotClient>()
                         .AddScoped<AlertHistoryFileRepository>()
                         .AddScoped<AlertHistoryService>()
+                        .AddScoped<DiscordEmbedBuilderService>()
                         .AddScoped<TwitchDropFinderService>();
 
         builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
