@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Services;
 
@@ -56,9 +57,10 @@ internal static class Program
 
         Console.WriteLine(startupCompleteMessage);
 
+        Settings settings = await serviceProvider.GetRequiredService<SettingsFileRepository>().GetSettingsFromFileAsync();
         await using (DiscordNotificationService discordNotificationService = serviceProvider.GetRequiredService<DiscordNotificationService>())
         {
-            await discordNotificationService.SendStartupCompleteNotificationAsync(GCSettings.IsServerGC, GCSettings.LargeObjectHeapCompactionMode, isDevelopment, Environment.ProcessId, Environment.MachineName);
+            await discordNotificationService.SendStartupCompleteNotificationAsync(settings.DiscordBotToken, settings.DiscordChannelId, GCSettings.IsServerGC, GCSettings.LargeObjectHeapCompactionMode, isDevelopment, Environment.ProcessId, Environment.MachineName);
         }
     }
 }

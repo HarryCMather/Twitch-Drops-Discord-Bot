@@ -18,14 +18,24 @@ public sealed class DiscordNotificationService : IAsyncDisposable
         _discordBotClient = discordBotClient;
     }
 
-    public async Task SendStartupCompleteNotificationAsync(bool isServerGc, GCLargeObjectHeapCompactionMode lohCompactionMode, bool isDevelopment, int processId, string hostname)
+    public async Task SendStartupCompleteNotificationAsync(string discordBotToken, ulong discordBotChannelId, bool isServerGc, GCLargeObjectHeapCompactionMode lohCompactionMode, bool isDevelopment, int processId, string hostname)
     {
+        if (!_discordBotClient.IsInitialized)
+        {
+            await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
+        }
+
         Embed embed = _discordEmbedBuilderService.BuildEmbedForStartupComplete(isServerGc, lohCompactionMode, isDevelopment, processId, hostname);
         await _discordBotClient.SendMessageAsync(embed);
     }
 
-    public async Task SendTwitchDropNotificationsAsync(List<GetDropsResponse> drops)
+    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<GetDropsResponse> drops)
     {
+        if (!_discordBotClient.IsInitialized)
+        {
+            await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
+        }
+
         foreach (GetDropsResponse drop in drops)
         {
             foreach (GetDropsReward reward in drop.Rewards)

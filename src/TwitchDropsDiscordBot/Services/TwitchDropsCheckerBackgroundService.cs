@@ -34,7 +34,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 
                     await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
                     {
-                        await discordNotificationService.SendTwitchDropNotificationsAsync(newDrops);
+                        await discordNotificationService.SendTwitchDropNotificationsAsync(settings.DiscordBotToken, settings.DiscordChannelId, newDrops);
                     }
 
                     Console.WriteLine("Finished sending notifications for new drops.");
