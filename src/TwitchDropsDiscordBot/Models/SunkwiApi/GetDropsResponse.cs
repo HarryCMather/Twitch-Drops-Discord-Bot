@@ -22,7 +22,7 @@ public sealed class GetDropsResponse
     public string GameDisplayName { get; set; }
 
     [JsonPropertyName("rewards")]
-    public List<GetDropsReward> Rewards { get; } = [];
+    public List<GetDropsReward> Rewards { get; set; }
 
     /// <summary>
     /// The Box Art Image URL for the requested game.
@@ -119,7 +119,7 @@ public sealed class GetDropsReward
     /// All available Time-Based Drops for the current drop reward.
     /// </summary>
     [JsonPropertyName("timeBasedDrops")]
-    public List<GetDropsTimeBasedDrop> TimeBasedDrops { get; } = [];
+    public List<GetDropsTimeBasedDrop> TimeBasedDrops { get; set; }
 
     /// <summary>
     /// The type of the current reward.
@@ -138,7 +138,7 @@ public sealed class GetDropsReward
     // public GetDropsAllow Allow { get; set; }
 
     // [JsonPropertyName("eventBasedDrops")]
-    // public List<object> EventBasedDrops { get; } = [];
+    // public List<object> EventBasedDrops { get; set; }
 
     // [JsonPropertyName("game")]
     // public GetDropsGame Game { get; set; }
@@ -188,7 +188,7 @@ public sealed class GetDropsTimeBasedDrop
     // public int RequiredSubs { get; set; }
 
     // [JsonPropertyName("benefitEdges")]
-    // public List<GetDropsBenefitEdge> BenefitEdges { get; } = [];
+    // public List<GetDropsBenefitEdge> BenefitEdges { get; set; }
 
     // [JsonPropertyName("preconditionDrops")]
     // public object PreconditionDrops { get; set; }
@@ -197,7 +197,7 @@ public sealed class GetDropsTimeBasedDrop
 // public sealed class GetDropsAllow
 // {
 //     [JsonPropertyName("channels")]
-//     public List<GetDropsChannel> Channels { get; } = [];
+//     public List<GetDropsChannel> Channels { get; set; }
 //
 //     [JsonPropertyName("isEnabled")]
 //     public bool IsEnabled { get; set; }
