@@ -86,7 +86,7 @@ public sealed class DiscordEmbedBuilderService
 
     private static string FormatDateTimeOffset(DateTimeOffset dateTimeOffset)
     {
-        return $"{dateTimeOffset.UtcDateTime:ddd dd-MMM-yy} (GMT+0)";
+        return $"{dateTimeOffset.UtcDateTime:ddd dd-MMM-yy HH:mm:ss} (GMT+0)";
     }
 
     private static string FormatTimeDuration(ushort minutes)
