@@ -12,11 +12,11 @@ public sealed class SunkwiApiClient
         _httpClient = httpClient;
     }
 
-    public async Task<List<GetDropsResponse>> GetDropsAsync()
+    public IAsyncEnumerable<GetDropsResponse> GetDropsAsync()
     {
         const string requestUrl = "https://twitch-drops-api.sunkwi.com/drops";
 
-        List<GetDropsResponse> getDropsResponse = await _httpClient.GetFromJsonAsync<List<GetDropsResponse>>(requestUrl);
+        IAsyncEnumerable<GetDropsResponse> getDropsResponse = _httpClient.GetFromJsonAsAsyncEnumerable<GetDropsResponse>(requestUrl);
         return getDropsResponse;
     }
 }
