@@ -6,11 +6,13 @@ namespace TwitchDropsDiscordBot.Services;
 public sealed class TwitchDropFinderService
 {
     private readonly SunkwiApiClient _sunkwiApiClient;
+    private readonly AlertHistoryService _alertHistoryService;
     private readonly TimeProvider _timeProvider;
 
-    public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient, TimeProvider timeProvider)
+    public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient, AlertHistoryService alertHistoryService, TimeProvider timeProvider)
     {
         _sunkwiApiClient = sunkwiApiClient;
+        _alertHistoryService = alertHistoryService;
         _timeProvider = timeProvider;
     }
 
@@ -22,6 +24,7 @@ public sealed class TwitchDropFinderService
             IAsyncEnumerable<GetDropsResponse> getDropsResponse = _sunkwiApiClient.GetDropsAsync();
             List<GetDropsResponse> dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, gameNames);
 
+            // TODO: REPLACE THIS WITH A CALL TO SEND THE DISCORD WEBHOOK:
             foreach (GetDropsResponse drop in dropsForRequestedGames)
             {
                 Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(drop));
@@ -55,6 +58,7 @@ public sealed class TwitchDropFinderService
                 RemoveTimeBasedDropsThatHaveNotStartedOrHaveExpired(drop.Rewards, currentUtcDateTime);
                 RemoveInactiveRewards(drop.Rewards);
                 RemoveRewardsWithNoTimeBasedDrops(drop.Rewards);
+                await RemoveRewardsThatHaveAlreadyBeenAlertedAsync(drop.Rewards);
 
                 if (drop.Rewards.Count > 0)
                 {
@@ -62,7 +66,7 @@ public sealed class TwitchDropFinderService
                 }
                 else
                 {
-                    Console.WriteLine($"After removing inactive rewards and rewards without time-based drops, there were no rewards left for game '{drop.GameDisplayName}'. Therefore, this drop won't be used.");
+                    Console.WriteLine($"After filtering rewards, there were no new rewards left for game '{drop.GameDisplayName}'. Therefore, no notification will be sent for this drop.");
                 }
             }
         }
@@ -114,6 +118,30 @@ public sealed class TwitchDropFinderService
         if (removedRewards > 0)
         {
             Console.WriteLine($"{removedRewards} rewards were removed from the drop as they did not contain any time-based drops.");
+        }
+    }
+
+    private async Task RemoveRewardsThatHaveAlreadyBeenAlertedAsync(List<GetDropsReward> rewards)
+    {
+        for (int rewardCount = rewards.Count - 1; rewardCount >= 0; rewardCount--)
+        {
+            for (int timeBasedDropCount = rewards[rewardCount].TimeBasedDrops.Count - 1; timeBasedDropCount >= 0; timeBasedDropCount--)
+            {
+                Guid rewardId = rewards[rewardCount].Id;
+                Guid timeBasedDropId = rewards[rewardCount].TimeBasedDrops[timeBasedDropCount].Id;
+
+                bool alreadyAlerted = await _alertHistoryService.HasDropNotificationBeenSentAsync(rewardId, timeBasedDropId);
+                if (alreadyAlerted)
+                {
+                    rewards[rewardCount].TimeBasedDrops.RemoveAt(timeBasedDropCount);
+                }
+            }
+
+            // No point continuing if there aren't any more time-based drops remaining within the reward:
+            if (rewards[rewardCount].TimeBasedDrops.Count == 0)
+            {
+                rewards.RemoveAt(rewardCount);
+            }
         }
     }
 }

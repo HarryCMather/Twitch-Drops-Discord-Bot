@@ -62,6 +62,12 @@ public sealed class GetDropsOwner
 public sealed class GetDropsReward
 {
     /// <summary>
+    /// The ID for the current reward.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public Guid Id { get; set; }
+
+    /// <summary>
     /// The URL for users to link their accounts to receive drops.
     /// For example: https://drops-register.ubi.com/#/en-US
     /// </summary>
@@ -128,9 +134,6 @@ public sealed class GetDropsReward
     [JsonPropertyName("__typename")]
     public string Typename { get; set; }
 
-    // [JsonPropertyName("id")]
-    // public string Id { get; set; }
-
     // [JsonPropertyName("self")]
     // public GetDropsSelf Self { get; set; }
 
@@ -149,6 +152,12 @@ public sealed class GetDropsReward
 
 public sealed class GetDropsTimeBasedDrop
 {
+    /// <summary>
+    /// The ID for the current Time-Based Drop.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public Guid Id { get; set; }
+
     /// <summary>
     /// When the Time-Based Drop starts.
     /// </summary>
@@ -180,9 +189,6 @@ public sealed class GetDropsTimeBasedDrop
     /// </summary>
     [JsonPropertyName("__typename")]
     public string Typename { get; set; }
-
-    // [JsonPropertyName("id")]
-    // public string Id { get; set; }
 
     // [JsonPropertyName("requiredSubs")]
     // public int RequiredSubs { get; set; }

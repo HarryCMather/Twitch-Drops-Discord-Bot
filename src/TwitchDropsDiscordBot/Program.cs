@@ -24,6 +24,8 @@ internal static class Program
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
         builder.Services.AddScoped<SunkwiApiClient>()
+                        .AddScoped<AlertHistoryFileRepository>()
+                        .AddScoped<AlertHistoryService>()
                         .AddScoped<TwitchDropFinderService>();
 
         builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
