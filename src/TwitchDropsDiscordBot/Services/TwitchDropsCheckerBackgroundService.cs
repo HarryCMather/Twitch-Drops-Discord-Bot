@@ -21,32 +21,44 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            Settings settings = await _settingsFileRepository.GetSettingsFromFileAsync();
+            TimeSpan? waitDuration = null;
+            TimeSpan fallbackWaitDuration = TimeSpan.FromMinutes(30);
 
-            using (IServiceScope scope = _serviceScopeFactory.CreateScope())
+            try
             {
-                TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
+                Settings settings = await _settingsFileRepository.GetSettingsFromFileAsync();
+                waitDuration = TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes);
 
-                if (newDrops.Count > 0)
+                using (IServiceScope scope = _serviceScopeFactory.CreateScope())
                 {
-                    Console.WriteLine("Sending notifications for new drops...");
+                    TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
+                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
 
-                    await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
+                    if (newDrops.Count > 0)
                     {
-                        await discordNotificationService.SendTwitchDropNotificationsAsync(settings.DiscordBotToken, settings.DiscordChannelId, newDrops);
-                    }
+                        Console.WriteLine("Sending notifications for new drops...");
 
-                    Console.WriteLine("Finished sending notifications for new drops.");
-                }
-                else
-                {
-                    Console.WriteLine("No new drops found...");
+                        await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
+                        {
+                            await discordNotificationService.SendTwitchDropNotificationsAsync(settings.DiscordBotToken, settings.DiscordChannelId, newDrops);
+                        }
+
+                        Console.WriteLine("Finished sending notifications for new drops.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No new drops found...");
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: Exception thrown in BackgroundService: {ex.Message}\n{ex.StackTrace}");
+            }
 
-            Console.WriteLine($"Waiting for {settings.DelayBetweenChecksInMinutes} minutes before checking for new drops again.");
-            await Task.Delay(TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes), stoppingToken);
+            waitDuration ??= fallbackWaitDuration;
+            Console.WriteLine($"Waiting for {waitDuration.Value.TotalMinutes} minutes before checking for new drops again.");
+            await Task.Delay(waitDuration.Value, stoppingToken);
         }
     }
 }
