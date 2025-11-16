@@ -19,7 +19,6 @@ internal static class Program
 
         builder.Services.AddSingleton<SettingsFileRepository>()
                         .AddSingleton<TimeProvider>(TimeProvider.System)
-                        .AddMemoryCache()
                         .AddHttpClient<SunkwiApiClient>()
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
