@@ -16,7 +16,7 @@ public sealed class TwitchDropFinderService
         _timeProvider = timeProvider;
     }
 
-    public async Task<List<GetDropsResponse>> FindNewDropsAsync(IReadOnlyCollection<string> gameNames)
+    public async Task<List<GetDropsResponse>> FindNewDropsAsync(List<string> gameNames)
     {
         List<GetDropsResponse> dropsForRequestedGames = [];
 
@@ -38,7 +38,7 @@ public sealed class TwitchDropFinderService
         return dropsForRequestedGames;
     }
 
-    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, IReadOnlyCollection<string> requestedGameNames)
+    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<string> requestedGameNames)
     {
         HashSet<string> requestedGameNamesSet = new(requestedGameNames);
 
