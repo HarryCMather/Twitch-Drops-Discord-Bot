@@ -25,7 +25,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
             using (IServiceScope scope = _serviceScopeFactory.CreateScope())
             {
                 TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                await twitchDropFinderService.FindNewDropsAsync(settings.ClientId, settings.ClientSecret, settings.GameNames);
+                await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
 
                 Console.WriteLine($"Waiting for {settings.DelayBetweenChecksInMinutes} minutes before checking for new drops again.");
                 await Task.Delay(TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes), stoppingToken);
