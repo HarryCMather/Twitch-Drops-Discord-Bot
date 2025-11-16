@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using TwitchDropsDiscordBot.Models;
 
 namespace TwitchDropsDiscordBot.Persistence;
@@ -7,6 +8,7 @@ namespace TwitchDropsDiscordBot.Persistence;
 /// Implementation of Settings File Repository.
 /// Performs file-related actions for retrieving Settings.
 /// </summary>
+[ExcludeFromCodeCoverage(Justification = "Cannot unit test file-based persistence.")]
 public sealed class SettingsFileRepository
 {
     /// <summary>
