@@ -19,6 +19,9 @@ echo "Extracting the Bot and removing the archive...";
 7z x ./TwitchDropsDiscordBot.zip;
 rm ./TwitchDropsDiscordBot.zip;
 
+echo "Backing up the previous Alert History file...";
+cp -f ../TwitchDropsDiscordBot/AlertHistory.txt ../AlertHistory.txt;
+
 echo "Overwriting the Settings file with local copy...";
 cp -f ../Settings.json ./Settings.json;
 
