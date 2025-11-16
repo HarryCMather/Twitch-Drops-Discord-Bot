@@ -9,6 +9,8 @@ public sealed class DiscordBotClient : IAsyncDisposable
     private SocketTextChannel _textChannel;
     private TaskCompletionSource<bool> _waitForReadyTaskCompletionSource;
 
+    public bool IsInitialized { get; private set; }
+
     public async Task InitializeAsync(string discordBotToken, ulong discordChannelId)
     {
         _discordSocketClient = new DiscordSocketClient();
@@ -22,7 +24,8 @@ public sealed class DiscordBotClient : IAsyncDisposable
 
         await _waitForReadyTaskCompletionSource.Task;
 
-        _textChannel = _discordSocketClient.GetChannel(discordChannelId) as SocketTextChannel;
+        _textChannel = (await _discordSocketClient.GetChannelAsync(discordChannelId)) as SocketTextChannel;
+        IsInitialized = true;
     }
 
     public async Task SendMessageAsync(Embed embed)
