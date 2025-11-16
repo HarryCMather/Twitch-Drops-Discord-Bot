@@ -22,6 +22,9 @@ rm ./TwitchDropsDiscordBot.zip;
 echo "Backing up the previous Alert History file...";
 cp -f ../TwitchDropsDiscordBot/AlertHistory.txt ../AlertHistory.txt;
 
+echo "Copying the Alert History file into deploy folder";
+cp -f ../AlertHistory.txt ./AlertHistory.txt;
+
 echo "Overwriting the Settings file with local copy...";
 cp -f ../Settings.json ./Settings.json;
 
