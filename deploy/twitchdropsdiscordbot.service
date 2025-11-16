@@ -1,0 +1,26 @@
+# This file will need to be edited depending on the user running the bot, and any file paths.
+# I've deliberately not populated these to be the same as the deployment server...
+# To enable this service on start-up, you can copy update this file and place it in /etc/systemd/system (requires root privileges).
+# Then run the following (all as root, or with sudo):
+# 	systemctl daemon-reload
+#	systemctl start twitchdropsdiscordbot.service
+# Then check that the service is up:
+#	systemctl status twitchdropsdiscordbot.service
+# If it is successfully running, then enable it to auto-start:
+#	systemctl enable twitchdropsdiscordbot.service
+# The following properties will need to be changed:
+#	 - user
+#	 - /path/to/working/directory/for/TwitchDropsDiscordBot
+[Unit]
+Description=Twitch Drops Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/path/to/working/directory/for/TwitchDropsDiscordBot
+ExecStart='/path/to/working/directory/for/TwitchDropsDiscordBot/TwitchDropsDiscordBot'
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
