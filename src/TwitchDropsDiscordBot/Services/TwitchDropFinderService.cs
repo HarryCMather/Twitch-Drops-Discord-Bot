@@ -6,10 +6,12 @@ namespace TwitchDropsDiscordBot.Services;
 public sealed class TwitchDropFinderService
 {
     private readonly SunkwiApiClient _sunkwiApiClient;
+    private readonly TimeProvider _timeProvider;
 
-    public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient)
+    public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient, TimeProvider timeProvider)
     {
         _sunkwiApiClient = sunkwiApiClient;
+        _timeProvider = timeProvider;
     }
 
     public async Task FindNewDropsAsync(IReadOnlyCollection<string> gameNames)
@@ -35,17 +37,22 @@ public sealed class TwitchDropFinderService
         }
     }
 
-    private static async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, IReadOnlyCollection<string> requestedGameNames)
+    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, IReadOnlyCollection<string> requestedGameNames)
     {
         HashSet<string> requestedGameNamesSet = new(requestedGameNames);
+
+        // The SunkwiApi is returning DateTimes in the ISO-8601 format, so assuming UTC should (hopefully) be appropriate here:
+        DateTimeOffset currentUtcDateTime = _timeProvider.GetUtcNow();
 
         List<GetDropsResponse> dropsForRequestedGames = [];
         await foreach (GetDropsResponse drop in drops)
         {
-            if (requestedGameNamesSet.Contains(drop.GameDisplayName))
+            if (requestedGameNamesSet.Contains(drop.GameDisplayName) && IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt))
             {
                 Console.WriteLine($"Found drop for game '{drop.GameDisplayName}'");
 
+                RemoveRewardsThatHaveNotStartedOrHaveExpired(drop.Rewards, currentUtcDateTime);
+                RemoveTimeBasedDropsThatHaveNotStartedOrHaveExpired(drop.Rewards, currentUtcDateTime);
                 RemoveInactiveRewards(drop.Rewards);
                 RemoveRewardsWithNoTimeBasedDrops(drop.Rewards);
 
@@ -61,6 +68,35 @@ public sealed class TwitchDropFinderService
         }
 
         return dropsForRequestedGames;
+    }
+
+    private static bool IsBetweenDateTimes(DateTimeOffset dateTime, DateTimeOffset startsAt, DateTimeOffset endsAt)
+    {
+        return dateTime >= startsAt && dateTime <= endsAt;
+    }
+
+    private static void RemoveRewardsThatHaveNotStartedOrHaveExpired(List<GetDropsReward> rewards, DateTimeOffset currentUtcDateTime)
+    {
+        int removedRewards = rewards.RemoveAll(drop => !IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt));
+        if (removedRewards > 0)
+        {
+            Console.WriteLine($"{removedRewards} rewards were removed from their associated drop as they had not started or had expired.");
+        }
+    }
+
+    private static void RemoveTimeBasedDropsThatHaveNotStartedOrHaveExpired(List<GetDropsReward> rewards, DateTimeOffset currentUtcDateTime)
+    {
+        int removedTimeBasedDrops = 0;
+
+        foreach (GetDropsReward reward in rewards)
+        {
+            removedTimeBasedDrops += reward.TimeBasedDrops.RemoveAll(drop => !IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt));
+        }
+
+        if (removedTimeBasedDrops > 0)
+        {
+            Console.WriteLine($"{removedTimeBasedDrops} time-based drops were removed from their associated rewards as they had not started or had expired.");
+        }
     }
 
     private static void RemoveInactiveRewards(List<GetDropsReward> rewards)
