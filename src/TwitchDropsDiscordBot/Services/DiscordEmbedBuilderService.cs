@@ -22,11 +22,11 @@ public sealed class DiscordEmbedBuilderService
                     .WithColor(Color.DarkBlue)
                     .WithTimestamp(_timeProvider.GetUtcNow());
 
-        embedBuilder.AddField("ServerGC", isServerGc, true)
-                    .AddField("LOHCompactionMode", lohCompactionMode, true)
-                    .AddField("IsDevelopment", isDevelopment, true)
-                    .AddField("ProcessId", processId, true)
-                    .AddField("Hostname", hostname, true);
+        embedBuilder.AddField("ServerGC", isServerGc, false)
+                    .AddField("LOHCompactionMode", lohCompactionMode, false)
+                    .AddField("IsDevelopment", isDevelopment, false)
+                    .AddField("ProcessId", processId, false)
+                    .AddField("Hostname", hostname, false);
 
         return embedBuilder.Build();
     }
@@ -55,9 +55,9 @@ public sealed class DiscordEmbedBuilderService
 
     private static void AddDropRewardBaseDetails(EmbedBuilder embedBuilder, GetDropsReward dropReward)
     {
-        embedBuilder.AddField("Owner", dropReward.Owner.Name, true)
-                    .AddField("Starts", FormatDateTimeOffset(dropReward.StartsAt), true)
-                    .AddField("Ends", FormatDateTimeOffset(dropReward.EndsAt), true);
+        embedBuilder.AddField("Owner", dropReward.Owner.Name, false)
+                    .AddField("Starts", FormatDateTimeOffset(dropReward.StartsAt), false)
+                    .AddField("Ends", FormatDateTimeOffset(dropReward.EndsAt), false);
     }
 
     private static void AddDropRewardTimeBasedDrops(EmbedBuilder embedBuilder, List<GetDropsTimeBasedDrop> timeBasedDrops)
@@ -75,12 +75,12 @@ public sealed class DiscordEmbedBuilderService
     {
         if (!string.IsNullOrEmpty(dropReward.AccountLinkUrl))
         {
-            embedBuilder.AddField("Link Account", dropReward.AccountLinkUrl, true);
+            embedBuilder.AddField("Link Account", dropReward.AccountLinkUrl, false);
         }
 
         if (!string.IsNullOrEmpty(dropReward.DetailsUrl))
         {
-            embedBuilder.AddField("More Details", dropReward.DetailsUrl, true);
+            embedBuilder.AddField("More Details", dropReward.DetailsUrl, false);
         }
     }
 
