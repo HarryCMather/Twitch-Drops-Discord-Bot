@@ -18,7 +18,7 @@ After=network.target
 [Service]
 Type=simple
 User=user
-WorkingDirectory=/path/to/working/directory/for/TwitchDropsDiscordBot
+WorkingDirectory=/path/to/working/directory/for/TwitchDropsDiscordBot/TwitchDropsDiscordBot
 ExecStart='/path/to/working/directory/for/TwitchDropsDiscordBot/TwitchDropsDiscordBot/TwitchDropsDiscordBot'
 Restart=on-failure
 
