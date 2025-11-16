@@ -56,7 +56,11 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                 Console.WriteLine($"Error: Exception thrown in BackgroundService: {ex.Message}\n{ex.StackTrace}");
             }
 
-            waitDuration ??= fallbackWaitDuration;
+            if (waitDuration is null || waitDuration.Value.TotalMinutes < 1)
+            {
+                Console.WriteLine($"An invalid wait duration was supplied in settings. To avoid infinite loops with high CPU usage, falling back to {fallbackWaitDuration.TotalMinutes} minutes.");
+                waitDuration = fallbackWaitDuration;
+            }
             Console.WriteLine($"Waiting for {waitDuration.Value.TotalMinutes} minutes before checking for new drops again.");
             await Task.Delay(waitDuration.Value, stoppingToken);
         }
