@@ -5,11 +5,11 @@ on:
     branches:
      - main
     paths:
-     - "src/TwitchDropsDiscordBot"
+     - "src/TwitchDropsDiscordBot/**"
      - ".github/workflows/bot.yml"
   pull_request:
     paths:
-     - "src/TwitchDropsDiscordBot"
+     - "src/TwitchDropsDiscordBot/**"
      - ".github/workflows/bot.yml"
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
       - name: ".NET: Install SDK"
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: "9.0.x"
       
       - name: ".NET: Restore"
         run: dotnet restore ${{ env.BOT_CSPROJ_PATH }}
