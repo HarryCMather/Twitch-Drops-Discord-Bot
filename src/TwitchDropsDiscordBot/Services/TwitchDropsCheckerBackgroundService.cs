@@ -28,6 +28,21 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                 TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
                 List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
 
+                if (newDrops.Count > 0)
+                {
+                    Console.WriteLine("Sending notifications for new drops...");
+
+                    await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
+                    {
+                        await discordNotificationService.SendTwitchDropNotificationsAsync(newDrops);
+                    }
+
+                    Console.WriteLine("Finished sending notifications for new drops.");
+                }
+                else
+                {
+                    Console.WriteLine("No new drops found...");
+                }
             }
 
             Console.WriteLine($"Waiting for {settings.DelayBetweenChecksInMinutes} minutes before checking for new drops again.");
