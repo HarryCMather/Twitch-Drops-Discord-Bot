@@ -13,10 +13,10 @@ namespace TwitchDropsDiscordBot.Models.SunkwiApi;
 public sealed class GetDropsResponse
 {
     [JsonPropertyName("startAt")]
-    public DateTime StartAt { get; set; }
+    public DateTimeOffset StartsAt { get; set; }
 
     [JsonPropertyName("endAt")]
-    public DateTime EndAt { get; set; }
+    public DateTimeOffset EndsAt { get; set; }
 
     [JsonPropertyName("gameDisplayName")]
     public string GameDisplayName { get; set; }
@@ -86,13 +86,13 @@ public sealed class GetDropsReward
     /// DateTime when the reward starts.
     /// </summary>
     [JsonPropertyName("startAt")]
-    public DateTime StartAt { get; set; }
+    public DateTimeOffset StartsAt { get; set; }
 
     /// <summary>
     /// DateTime when the reward ends.
     /// </summary>
     [JsonPropertyName("endAt")]
-    public DateTime EndAt { get; set; }
+    public DateTimeOffset EndsAt { get; set; }
 
     /// <summary>
     /// Name of the current drop campaign.
@@ -153,13 +153,13 @@ public sealed class GetDropsTimeBasedDrop
     /// When the Time-Based Drop starts.
     /// </summary>
     [JsonPropertyName("startAt")]
-    public DateTime StartAt { get; set; }
+    public DateTimeOffset StartsAt { get; set; }
 
     /// <summary>
     /// When the Time-Based Drop ends.
     /// </summary>
     [JsonPropertyName("endAt")]
-    public DateTime EndAt { get; set; }
+    public DateTimeOffset EndsAt { get; set; }
 
     /// <summary>
     /// The Name of the Time-Based Drop.
@@ -233,7 +233,7 @@ public sealed class GetDropsTimeBasedDrop
 //     public string Id { get; set; }
 //
 //     [JsonPropertyName("createdAt")]
-//     public DateTime CreatedAt { get; set; }
+//     public DateTimeOffset CreatedAt { get; set; }
 //
 //     [JsonPropertyName("entitlementLimit")]
 //     public int EntitlementLimit { get; set; }
