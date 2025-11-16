@@ -48,10 +48,10 @@ public sealed class AlertHistoryService
     /// </summary>
     /// <param name="rewardId"></param>
     /// <param name="timeBasedDropId"></param>
-    public async Task RecordDropNotificationSentAsync(Guid rewardId, Guid timeBasedDropId)
+    public async Task RecordDropNotificationSentAsync(Guid rewardId, IEnumerable<Guid> timeBasedDropId)
     {
-        string line = GetFormattedLine(rewardId, timeBasedDropId);
-        await _alertHistoryFileRepository.AppendLineAsync(line);
+        IEnumerable<string> formattedLines = timeBasedDropId.Select(dropId => GetFormattedLine(rewardId, dropId));
+        await _alertHistoryFileRepository.AppendLineAsync(formattedLines);
     }
 
     private static string GetFormattedLine(Guid rewardId, Guid timeBasedDropId)

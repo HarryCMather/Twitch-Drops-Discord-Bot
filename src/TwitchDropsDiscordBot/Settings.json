@@ -1,8 +1,9 @@
 {
+  "DiscordBotToken": "SET DISCORD TOKEN HERE",
+  "DiscordChannelId": 1234567890,
   "GameNames": [
     "Tom Clancy's Rainbow Six Siege X",
     "Phasmophobia",
-    "World of Tanks",
     "Counter-Strike"
   ],
   "DelayBetweenChecksInMinutes": 15

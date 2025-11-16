@@ -30,15 +30,12 @@ public sealed class AlertHistoryFileRepository
     }
 
     /// <summary>
-    /// Appends the supplied line to the end of the file.
+    /// Appends the supplied lines to the end of the file.
     /// </summary>
-    /// <param name="line"></param>
-    public async Task AppendLineAsync(string line)
+    /// <param name="lines"></param>
+    public async Task AppendLineAsync(IEnumerable<string> lines)
     {
-        await using (StreamWriter streamWriter = File.AppendText(FilePath))
-        {
-            await streamWriter.WriteLineAsync(line);
-        }
+        await File.AppendAllLinesAsync(FilePath, lines);
     }
 
     private static void EnsureCreated()

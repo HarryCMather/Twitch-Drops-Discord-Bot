@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Services;
 
@@ -23,14 +24,17 @@ internal static class Program
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
         builder.Services.AddScoped<SunkwiApiClient>()
+                        .AddScoped<DiscordBotClient>()
                         .AddScoped<AlertHistoryFileRepository>()
                         .AddScoped<AlertHistoryService>()
+                        .AddScoped<DiscordEmbedBuilderService>()
+                        .AddScoped<DiscordNotificationService>()
                         .AddScoped<TwitchDropFinderService>();
 
         builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
 
         IHost host = builder.Build();
-        LogStartupComplete(builder.Environment.IsDevelopment());
+        await LogStartupCompleteAsync(builder.Environment.IsDevelopment(), host.Services);
         await host.RunAsync();
     }
 
@@ -42,7 +46,7 @@ internal static class Program
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
     }
 
-    private static void LogStartupComplete(bool isDevelopment)
+    private static async Task LogStartupCompleteAsync(bool isDevelopment, IServiceProvider serviceProvider)
     {
         string startupCompleteMessage = "Twitch Drops Discord Bot Started Successfully...\n" +
                                         $"ServerGC: {GCSettings.IsServerGC}\n" +
@@ -52,6 +56,11 @@ internal static class Program
                                         $"Hostname: {Environment.MachineName}";
 
         Console.WriteLine(startupCompleteMessage);
-        // TODO: LOG THIS TO THE DISCORD TEXT CHANNEL!
+
+        Settings settings = await serviceProvider.GetRequiredService<SettingsFileRepository>().GetSettingsFromFileAsync();
+        await using (DiscordNotificationService discordNotificationService = serviceProvider.GetRequiredService<DiscordNotificationService>())
+        {
+            await discordNotificationService.SendStartupCompleteNotificationAsync(settings.DiscordBotToken, settings.DiscordChannelId, GCSettings.IsServerGC, GCSettings.LargeObjectHeapCompactionMode, isDevelopment, Environment.ProcessId, Environment.MachineName);
+        }
     }
 }

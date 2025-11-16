@@ -16,19 +16,15 @@ public sealed class TwitchDropFinderService
         _timeProvider = timeProvider;
     }
 
-    public async Task FindNewDropsAsync(IReadOnlyCollection<string> gameNames)
+    public async Task<List<GetDropsResponse>> FindNewDropsAsync(List<string> gameNames)
     {
+        List<GetDropsResponse> dropsForRequestedGames = [];
+
         try
         {
             Console.WriteLine("Checking for new Twitch drops...");
             IAsyncEnumerable<GetDropsResponse> getDropsResponse = _sunkwiApiClient.GetDropsAsync();
-            List<GetDropsResponse> dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, gameNames);
-
-            // TODO: REPLACE THIS WITH A CALL TO SEND THE DISCORD WEBHOOK:
-            foreach (GetDropsResponse drop in dropsForRequestedGames)
-            {
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(drop));
-            }
+            dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, gameNames);
         }
         catch (HttpRequestException exception)
         {
@@ -38,9 +34,11 @@ public sealed class TwitchDropFinderService
         {
             Console.WriteLine($"Exception: {exception.Message}");
         }
+
+        return dropsForRequestedGames;
     }
 
-    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, IReadOnlyCollection<string> requestedGameNames)
+    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<string> requestedGameNames)
     {
         HashSet<string> requestedGameNamesSet = new(requestedGameNames);
 
