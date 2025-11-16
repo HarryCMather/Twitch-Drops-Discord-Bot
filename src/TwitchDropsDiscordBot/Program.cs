@@ -1,6 +1,7 @@
 ﻿using System.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Services;
 
@@ -13,6 +14,8 @@ internal static class Program
         SetGcSettings();
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+
+        builder.Logging.ClearProviders();
 
         builder.Services.AddSingleton<SettingsFileRepository>()
                         .AddSingleton<TimeProvider>(TimeProvider.System)
