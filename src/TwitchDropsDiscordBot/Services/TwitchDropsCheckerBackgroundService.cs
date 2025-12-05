@@ -29,7 +29,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                 Settings settings = await _settingsFileRepository.GetSettingsFromFileAsync();
                 waitDuration = TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes);
 
-                using (IServiceScope scope = _serviceScopeFactory.CreateScope())
+                await using (AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope())
                 {
                     TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
                     List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
