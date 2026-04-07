@@ -13,4 +13,6 @@ public class TimeBasedDrop
     public DateTimeOffset EndsAt { get; set; }
 
     public short RequiredMinutesWatched { get; set; }
+
+    public DateTimeOffset? AlertedOn { get; set; }
 }
