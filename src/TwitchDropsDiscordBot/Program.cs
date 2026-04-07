@@ -1,9 +1,11 @@
 ﻿using System.Runtime;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Services;
@@ -28,6 +30,10 @@ internal static class Program
                         .AddHttpClient<SunkwiApiClient>()
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
+        builder.Services.AddDbContext<TwitchDropsBotDbContext>(dbContextOptions => dbContextOptions.UseNpgsql(builder.Configuration.GetConnectionString("Postgresql"))
+                                                                                                   .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                                                                                                   .UseSnakeCaseNamingConvention());
+
         builder.Services.AddScoped<SunkwiApiClient>()
                         .AddScoped<DiscordBotClient>()
                         .AddScoped<AlertHistoryFileRepository>()
@@ -39,6 +45,7 @@ internal static class Program
         builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
 
         IHost host = builder.Build();
+        await SeedGameNamesAsync(host.Services);
         await LogStartupCompleteAsync(builder.Environment.IsDevelopment(), host.Services);
         await host.RunAsync();
     }
@@ -72,6 +79,21 @@ internal static class Program
                                                                                   isDevelopment,
                                                                                   Environment.ProcessId,
                                                                                   Environment.MachineName);
+        }
+    }
+
+    private static async Task SeedGameNamesAsync(IServiceProvider serviceProvider)
+    {
+        List<string> gamesToSeed = [
+            "Rainbow Six Siege X",
+            "Phasmophobia",
+            "Counter-Strike"
+        ];
+
+        await using (AsyncServiceScope serviceScope = serviceProvider.CreateAsyncScope())
+        {
+            TwitchDropsBotSqlRepository sqlRepository = serviceScope.ServiceProvider.GetRequiredService<TwitchDropsBotSqlRepository>();
+            await sqlRepository.InsertNewGamesAsync(gamesToSeed);
         }
     }
 }

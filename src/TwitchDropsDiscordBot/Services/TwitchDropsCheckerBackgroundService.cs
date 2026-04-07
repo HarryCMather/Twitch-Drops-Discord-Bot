@@ -17,6 +17,9 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Ensure all migrations have had sufficient time to complete before starting the job loop:
+        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             TimeSpan? waitDuration = null;
@@ -25,6 +28,11 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
             {
                 await using (AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope())
                 {
+                    // The 3 types of configuration I am using here could change in appsettings.json between requests.
+                    // I was previously handling this by manually re-loading Settings through a Settings Repository before.
+                    // This has since been switched to IOptionsSnapshot<TOptions> as I didn't previously realise this provides this functionality out of the box.
+                    // This still works, as the "scope" for my config refers to each iteration within the background job loop.
+
                     BotConfiguration botConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BotConfiguration>>().Value;
                     waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
 
