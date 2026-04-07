@@ -1,19 +1,17 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using TwitchDropsDiscordBot.Models;
+using Microsoft.Extensions.Options;
+using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Models.SunkwiApi;
-using TwitchDropsDiscordBot.Persistence;
 
 namespace TwitchDropsDiscordBot.Services;
 
 public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 {
-    private readonly SettingsFileRepository _settingsFileRepository;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public TwitchDropsCheckerBackgroundService(SettingsFileRepository settingsFileRepository, IServiceScopeFactory serviceScopeFactory)
+    public TwitchDropsCheckerBackgroundService(IServiceScopeFactory serviceScopeFactory)
     {
-        _settingsFileRepository = settingsFileRepository;
         _serviceScopeFactory = serviceScopeFactory;
     }
 
@@ -22,25 +20,26 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             TimeSpan? waitDuration = null;
-            TimeSpan fallbackWaitDuration = TimeSpan.FromMinutes(30);
 
             try
             {
-                Settings settings = await _settingsFileRepository.GetSettingsFromFileAsync();
-                waitDuration = TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes);
-
                 await using (AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope())
                 {
+                    BotConfiguration botConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BotConfiguration>>().Value;
+                    waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
+
+                    GameConfiguration gameConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<GameConfiguration>>().Value;
                     TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
+                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(gameConfiguration.GameNames);
 
                     if (newDrops.Count > 0)
                     {
                         Console.WriteLine("Sending notifications for new drops...");
 
+                        DiscordConfiguration discordConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<DiscordConfiguration>>().Value;
                         await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
                         {
-                            await discordNotificationService.SendTwitchDropNotificationsAsync(settings.DiscordBotToken, settings.DiscordChannelId, newDrops);
+                            await discordNotificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops);
                         }
 
                         Console.WriteLine("Finished sending notifications for new drops.");
@@ -56,13 +55,22 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                 Console.WriteLine($"Error: Exception thrown in BackgroundService: {ex.Message}\n{ex.StackTrace}");
             }
 
-            if (waitDuration is null || waitDuration.Value.TotalMinutes < 1)
-            {
-                Console.WriteLine($"An invalid wait duration was supplied in settings. To avoid infinite loops with high CPU usage, falling back to {fallbackWaitDuration.TotalMinutes} minutes.");
-                waitDuration = fallbackWaitDuration;
-            }
-            Console.WriteLine($"Waiting for {waitDuration.Value.TotalMinutes} minutes before checking for new drops again.");
+            Console.WriteLine($"Waiting for {waitDuration!.Value.TotalMinutes} minutes before checking for new drops again.");
             await Task.Delay(waitDuration.Value, stoppingToken);
         }
+    }
+
+    private static TimeSpan GetWaitDelayDuration(uint delayBetweenChecksInMinutes)
+    {
+        TimeSpan fallbackWaitDuration = TimeSpan.FromMinutes(30);
+        TimeSpan configurationWaitDuration = TimeSpan.FromMinutes(delayBetweenChecksInMinutes);
+
+        if (configurationWaitDuration.TotalMinutes < 1 || configurationWaitDuration.TotalHours > 24)
+        {
+            Console.WriteLine($"An invalid wait duration was supplied in appsettings. Falling back to {fallbackWaitDuration.TotalMinutes} minutes.");
+            return fallbackWaitDuration;
+        }
+
+        return configurationWaitDuration;
     }
 }

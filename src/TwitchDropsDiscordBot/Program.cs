@@ -1,8 +1,10 @@
 ﻿using System.Runtime;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using TwitchDropsDiscordBot.Models;
+using Microsoft.Extensions.Options;
+using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Services;
 
@@ -18,8 +20,11 @@ internal static class Program
 
         builder.Logging.ClearProviders();
 
-        builder.Services.AddSingleton<SettingsFileRepository>()
-                        .AddSingleton<TimeProvider>(TimeProvider.System)
+        builder.Services.Configure<DiscordConfiguration>(builder.Configuration.GetRequiredSection(DiscordConfiguration.SectionKey))
+                        .Configure<GameConfiguration>(builder.Configuration.GetRequiredSection(GameConfiguration.SectionKey))
+                        .Configure<BotConfiguration>(builder.Configuration.GetRequiredSection(BotConfiguration.SectionKey));
+
+        builder.Services.AddSingleton<TimeProvider>(TimeProvider.System)
                         .AddHttpClient<SunkwiApiClient>()
                         .SetHandlerLifetime(TimeSpan.FromMinutes(1));
 
@@ -57,10 +62,16 @@ internal static class Program
 
         Console.WriteLine(startupCompleteMessage);
 
-        Settings settings = await serviceProvider.GetRequiredService<SettingsFileRepository>().GetSettingsFromFileAsync();
         await using (DiscordNotificationService discordNotificationService = serviceProvider.GetRequiredService<DiscordNotificationService>())
         {
-            await discordNotificationService.SendStartupCompleteNotificationAsync(settings.DiscordBotToken, settings.DiscordChannelId, GCSettings.IsServerGC, GCSettings.LargeObjectHeapCompactionMode, isDevelopment, Environment.ProcessId, Environment.MachineName);
+            DiscordConfiguration discordConfiguration = serviceProvider.GetRequiredService<IOptions<DiscordConfiguration>>().Value;
+            await discordNotificationService.SendStartupCompleteNotificationAsync(discordConfiguration.BotToken,
+                                                                                  discordConfiguration.TargetChannelId,
+                                                                                  GCSettings.IsServerGC,
+                                                                                  GCSettings.LargeObjectHeapCompactionMode,
+                                                                                  isDevelopment,
+                                                                                  Environment.ProcessId,
+                                                                                  Environment.MachineName);
         }
     }
 }
