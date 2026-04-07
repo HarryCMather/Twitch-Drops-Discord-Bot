@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Configuration;
+using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Services;
 
@@ -104,16 +105,22 @@ internal static class Program
 
     private static async Task SeedGameNamesAsync(IServiceProvider serviceProvider)
     {
-        List<string> gamesToSeed = [
+        List<string> gameNamesToSeed = [
             "Rainbow Six Siege X",
             "Phasmophobia",
             "Counter-Strike"
         ];
 
+        IEnumerable<Game> games = gameNamesToSeed.Select(gameName => new Game
+        {
+            Name = gameName,
+            ShouldAlert = true
+        });
+
         await using (AsyncServiceScope serviceScope = serviceProvider.CreateAsyncScope())
         {
             TwitchDropsBotSqlRepository sqlRepository = serviceScope.ServiceProvider.GetRequiredService<TwitchDropsBotSqlRepository>();
-            await sqlRepository.InsertNewGamesAsync(gamesToSeed);
+            await sqlRepository.InsertGamesAsync(games);
         }
     }
 }

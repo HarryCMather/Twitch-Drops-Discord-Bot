@@ -18,7 +18,6 @@ public sealed class TwitchDropsBotSqlRepository
         _dbContext = dbContext;
     }
 
-    public async Task<List<Game>> GetAlertableGamesAsync()
     {
         IQueryable<Game> query = _dbContext.Games.Where(game => game.ShouldAlert)
                                                  .Select(game => new Game
@@ -26,7 +25,21 @@ public sealed class TwitchDropsBotSqlRepository
                                                      Id = game.Id,
                                                      Name =  game.Name
                                                  });
+
+    public async Task<List<string>> GetAlertableGameNamesAsync()
+    {
+        IQueryable<string> query = _dbContext.Games.Where(game => game.ShouldAlert)
+                                                   .Select(game => game.Name);
         return await query.ToListAsync();
+    }
+
+    public async Task InsertGamesAsync(IEnumerable<Game> games)
+    {
+        await _dbContext.BulkInsertAsync(games, new BulkConfig
+        {
+            PropertiesToIncludeOnCompare = [ "name" ],
+            SetOutputIdentity = false
+        });
     }
 
     public async Task InsertNewGamesAsync(IEnumerable<string> distinctFoundGameNames)
