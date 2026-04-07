@@ -28,7 +28,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
             {
                 await using (AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope())
                 {
-                    // The 3 types of configuration I am using here could change in appsettings.json between requests.
+                    // The types of configuration I am using here could change in appsettings.json between requests.
                     // I was previously handling this by manually re-loading Settings through a Settings Repository before.
                     // This has since been switched to IOptionsSnapshot<TOptions> as I didn't previously realise this provides this functionality out of the box.
                     // This still works, as the "scope" for my config refers to each iteration within the background job loop.
@@ -36,9 +36,8 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                     BotConfiguration botConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BotConfiguration>>().Value;
                     waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
 
-                    GameConfiguration gameConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<GameConfiguration>>().Value;
                     TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(gameConfiguration.GameNames);
+                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync();
 
                     if (newDrops.Count > 0)
                     {

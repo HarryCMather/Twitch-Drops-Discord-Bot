@@ -1,4 +1,5 @@
-﻿using TwitchDropsDiscordBot.Models.SunkwiApi;
+﻿using TwitchDropsDiscordBot.Models.Entities;
+using TwitchDropsDiscordBot.Models.SunkwiApi;
 using TwitchDropsDiscordBot.Persistence;
 
 namespace TwitchDropsDiscordBot.Services;
@@ -6,25 +7,37 @@ namespace TwitchDropsDiscordBot.Services;
 public sealed class TwitchDropFinderService
 {
     private readonly SunkwiApiClient _sunkwiApiClient;
+    private readonly TwitchDropsBotSqlRepository _twitchDropsBotSqlRepository;
     private readonly AlertHistoryService _alertHistoryService;
     private readonly TimeProvider _timeProvider;
 
-    public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient, AlertHistoryService alertHistoryService, TimeProvider timeProvider)
+    public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient,
+                                   TwitchDropsBotSqlRepository twitchDropsBotSqlRepository,
+                                   AlertHistoryService alertHistoryService,
+                                   TimeProvider timeProvider)
     {
         _sunkwiApiClient = sunkwiApiClient;
+        _twitchDropsBotSqlRepository = twitchDropsBotSqlRepository;
         _alertHistoryService = alertHistoryService;
         _timeProvider = timeProvider;
     }
 
-    public async Task<List<GetDropsResponse>> FindNewDropsAsync(List<string> gameNames)
+    public async Task<List<GetDropsResponse>> FindNewDropsAsync()
     {
         List<GetDropsResponse> dropsForRequestedGames = [];
+
+        List<string> alertableGameNames = await _twitchDropsBotSqlRepository.GetAlertableGameNamesAsync();
+        if (alertableGameNames.Count == 0)
+        {
+            Console.WriteLine("No alertable games were set in the database. Skipping this iteration.");
+            return dropsForRequestedGames;
+        }
 
         try
         {
             Console.WriteLine("Checking for new Twitch drops...");
             IAsyncEnumerable<GetDropsResponse> getDropsResponse = _sunkwiApiClient.GetDropsAsync();
-            dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, gameNames);
+            dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, alertableGameNames);
         }
         catch (HttpRequestException exception)
         {
