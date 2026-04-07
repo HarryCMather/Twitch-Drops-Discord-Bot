@@ -18,13 +18,16 @@ public sealed class TwitchDropsBotSqlRepository
         _dbContext = dbContext;
     }
 
+    public async Task<bool> HasDropNotificationBeenSentAsync(Guid dropId, Guid timeBasedDropId)
     {
-        IQueryable<Game> query = _dbContext.Games.Where(game => game.ShouldAlert)
-                                                 .Select(game => new Game
-                                                 {
-                                                     Id = game.Id,
-                                                     Name =  game.Name
-                                                 });
+        // Whilst this isn't going to be an issue considering the small scale of this application,
+        // It would be more performant to get a list of all drops to check and do this in 1 database call,
+        // compared to this code, which is performing an Any check for every valid drop/timeBasedDropId.
+        // This shouldn't be a problem here, as only a few drops per week/month will realistically ever hit this stage.
+        return await _dbContext.TimeBasedDrops.AnyAsync(timeBasedDrop => timeBasedDrop.Id == timeBasedDropId &&
+                                                                         timeBasedDrop.ParentDropId == dropId &&
+                                                                         timeBasedDrop.AlertedOn == null);
+    }
 
     public async Task<List<string>> GetAlertableGameNamesAsync()
     {

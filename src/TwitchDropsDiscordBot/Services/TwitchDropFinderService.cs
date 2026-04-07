@@ -150,7 +150,7 @@ public sealed class TwitchDropFinderService
                 Guid rewardId = rewards[rewardCount].Id;
                 Guid timeBasedDropId = rewards[rewardCount].TimeBasedDrops[timeBasedDropCount].Id;
 
-                bool alreadyAlerted = await _alertHistoryService.HasDropNotificationBeenSentAsync(rewardId, timeBasedDropId);
+                bool alreadyAlerted = await _twitchDropsBotSqlRepository.HasDropNotificationBeenSentAsync(rewardId, timeBasedDropId);
                 if (alreadyAlerted)
                 {
                     rewards[rewardCount].TimeBasedDrops.RemoveAt(timeBasedDropCount);

@@ -21,15 +21,6 @@ public sealed class AlertHistoryFileRepository
     }
 
     /// <summary>
-    /// Opens a StreamReader for the AlertHistory file.
-    /// </summary>
-    /// <returns>Instantiated stream.</returns>
-    public StreamReader OpenReadStream()
-    {
-        return new StreamReader(FilePath);
-    }
-
-    /// <summary>
     /// Appends the supplied lines to the end of the file.
     /// </summary>
     /// <param name="lines"></param>
