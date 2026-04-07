@@ -45,6 +45,7 @@ internal static class Program
         builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
 
         IHost host = builder.Build();
+        await ApplyDatabaseMigrationsAsync(host.Services);
         await SeedGameNamesAsync(host.Services);
         await LogStartupCompleteAsync(builder.Environment.IsDevelopment(), host.Services);
         await host.RunAsync();
@@ -79,6 +80,25 @@ internal static class Program
                                                                                   isDevelopment,
                                                                                   Environment.ProcessId,
                                                                                   Environment.MachineName);
+        }
+    }
+
+    private static async Task ApplyDatabaseMigrationsAsync(IServiceProvider serviceProvider)
+    {
+        await using (AsyncServiceScope serviceScope = serviceProvider.CreateAsyncScope())
+        await using (TwitchDropsBotDbContext dbContext = serviceScope.ServiceProvider.GetRequiredService<TwitchDropsBotDbContext>())
+        {
+            IEnumerable<string> pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+            if (pendingMigrations.Any())
+            {
+                Console.WriteLine("Applying pending database migrations...");
+                await dbContext.Database.MigrateAsync();
+                Console.WriteLine("Database migrations were successfully applied.");
+            }
+            else
+            {
+                Console.WriteLine("No pending database migrations were found.");
+            }
         }
     }
 
