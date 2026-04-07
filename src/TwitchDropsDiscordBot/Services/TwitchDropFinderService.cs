@@ -55,12 +55,19 @@ public sealed class TwitchDropFinderService
     {
         HashSet<string> requestedGameNamesSet = new(requestedGameNames);
 
+        // Whilst this isn't necessary for extracting the drops themselves, it is meaningful to track this in the
+        // database in-case Twitch/Game authors change the names (like with Siege vs Siege X within the past year):
+        HashSet<string> foundGameNames = [];
+
         // The SunkwiApi is returning DateTimes in the ISO-8601 format, so assuming UTC should (hopefully) be appropriate here:
         DateTimeOffset currentUtcDateTime = _timeProvider.GetUtcNow();
 
         List<GetDropsResponse> dropsForRequestedGames = [];
         await foreach (GetDropsResponse drop in drops)
         {
+            // Don't need to perform a contains check here, as Add will only Add if the element isn't already present:
+            foundGameNames.Add(drop.GameDisplayName);
+
             if (requestedGameNamesSet.Contains(drop.GameDisplayName) && IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt))
             {
                 Console.WriteLine($"Found drop for game '{drop.GameDisplayName}'");
@@ -81,6 +88,8 @@ public sealed class TwitchDropFinderService
                 }
             }
         }
+
+        await _twitchDropsBotSqlRepository.InsertNewGamesAsync(foundGameNames);
 
         return dropsForRequestedGames;
     }
