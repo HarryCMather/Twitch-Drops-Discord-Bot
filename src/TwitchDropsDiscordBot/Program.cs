@@ -24,7 +24,6 @@ internal static class Program
         builder.Logging.ClearProviders();
 
         builder.Services.Configure<DiscordConfiguration>(builder.Configuration.GetRequiredSection(DiscordConfiguration.SectionKey))
-                        .Configure<GameConfiguration>(builder.Configuration.GetRequiredSection(GameConfiguration.SectionKey))
                         .Configure<BotConfiguration>(builder.Configuration.GetRequiredSection(BotConfiguration.SectionKey));
 
         builder.Services.AddSingleton<TimeProvider>(TimeProvider.System)
