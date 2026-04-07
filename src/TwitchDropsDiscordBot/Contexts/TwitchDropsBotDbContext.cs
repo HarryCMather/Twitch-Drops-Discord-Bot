@@ -19,6 +19,16 @@ public sealed class TwitchDropsBotDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        ConfigureGameEntity(modelBuilder);
+        ConfigureDropOwnerEntity(modelBuilder);
+        ConfigureDropEntity(modelBuilder);
+        ConfigureTimeBasedDropEntity(modelBuilder);
+
+        base.OnModelCreating(modelBuilder);
+    }
+
+    private static void ConfigureGameEntity(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Game>()
                     .HasKey(game => game.Id);
 
@@ -38,8 +48,10 @@ public sealed class TwitchDropsBotDbContext : DbContext
         modelBuilder.Entity<Game>()
                     .HasIndex(game => game.Name)
                     .IsUnique();
+    }
 
-
+    private static void ConfigureDropOwnerEntity(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<DropOwner>()
                     .HasKey(dropOwner => dropOwner.Id);
 
@@ -55,8 +67,10 @@ public sealed class TwitchDropsBotDbContext : DbContext
         modelBuilder.Entity<DropOwner>()
                     .HasIndex(dropOwner => dropOwner.Name)
                     .IsUnique();
+    }
 
-
+    private static void ConfigureDropEntity(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Drop>()
                     .HasKey(drop => drop.Id);
 
@@ -83,8 +97,10 @@ public sealed class TwitchDropsBotDbContext : DbContext
                     .WithMany()
                     .HasForeignKey("game_id")
                     .IsRequired();
+    }
 
-
+    private static void ConfigureTimeBasedDropEntity(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<TimeBasedDrop>()
                     .HasKey(timeBasedDrop => timeBasedDrop.Id);
 
