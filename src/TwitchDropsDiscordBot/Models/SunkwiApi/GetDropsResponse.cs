@@ -181,7 +181,7 @@ public sealed class GetDropsTimeBasedDrop
     /// The number of minutes of watch time required to unlock the Time-Based Drop.
     /// </summary>
     [JsonPropertyName("requiredMinutesWatched")]
-    public ushort RequiredMinutesWatched { get; set; }
+    public short RequiredMinutesWatched { get; set; }
 
     /// <summary>
     /// The type of the current time-based drop.
