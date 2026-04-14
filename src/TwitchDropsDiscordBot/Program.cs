@@ -36,6 +36,7 @@ internal static class Program
 
         builder.Services.AddScoped<SunkwiApiClient>()
                         .AddScoped<DiscordBotClient>()
+                        .AddScoped<TwitchDropsBotSqlRepository>()
                         .AddScoped<DiscordEmbedBuilderService>()
                         .AddScoped<DiscordNotificationService>()
                         .AddScoped<TwitchDropFinderService>();
