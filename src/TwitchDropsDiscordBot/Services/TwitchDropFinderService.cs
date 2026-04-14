@@ -19,9 +19,9 @@ public sealed class TwitchDropFinderService
         _timeProvider = timeProvider;
     }
 
-    public async Task<List<GetDropsResponse>> FindNewDropsAsync()
+    public async Task<List<Drop>> FindNewDropsAsync()
     {
-        List<GetDropsResponse> dropsForRequestedGames = [];
+        List<Drop> dropsForRequestedGames = [];
 
         List<Game> games = await _twitchDropsBotSqlRepository.GetGamesAsync();
         if (!games.Exists(game => game.ShouldAlert))
@@ -50,7 +50,7 @@ public sealed class TwitchDropFinderService
         return dropsForRequestedGames;
     }
 
-    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
+    private async Task<List<Drop>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
     {
         HashSet<string> existingGameNames = new(games.Select(game => game.Name));
 

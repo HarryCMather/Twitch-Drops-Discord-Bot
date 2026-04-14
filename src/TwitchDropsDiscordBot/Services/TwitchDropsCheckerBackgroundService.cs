@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using TwitchDropsDiscordBot.Models.Configuration;
-using TwitchDropsDiscordBot.Models.SunkwiApi;
+using TwitchDropsDiscordBot.Models.Entities;
 
 namespace TwitchDropsDiscordBot.Services;
 
@@ -37,7 +37,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                     waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
 
                     TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync();
+                    List<Drop> newDrops = await twitchDropFinderService.FindNewDropsAsync();
 
                     if (newDrops.Count > 0)
                     {

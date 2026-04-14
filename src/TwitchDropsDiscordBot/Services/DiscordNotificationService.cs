@@ -1,6 +1,6 @@
 ﻿using System.Runtime;
 using Discord;
-using TwitchDropsDiscordBot.Models.SunkwiApi;
+using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence;
 
 namespace TwitchDropsDiscordBot.Services;
@@ -29,31 +29,28 @@ public sealed class DiscordNotificationService : IAsyncDisposable
         await _discordBotClient.SendMessageAsync(embed);
     }
 
-    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<GetDropsResponse> drops)
+    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<Drop> drops)
     {
         if (!_discordBotClient.IsInitialized)
         {
             await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
         }
 
-        foreach (GetDropsResponse drop in drops)
+        foreach (Drop drop in drops)
         {
-            foreach (GetDropsReward reward in drop.Rewards)
-            {
-                await SendTwitchDropRewardNotificationAsync(reward, drop.GameDisplayName);
-            }
+            await SendTwitchDropRewardNotificationAsync(drop);
         }
     }
 
-    private async Task SendTwitchDropRewardNotificationAsync(GetDropsReward reward, string gameDisplayName)
+    private async Task SendTwitchDropRewardNotificationAsync(Drop drop)
     {
-        Embed embed = _discordEmbedBuilderService.BuildEmbedForTwitchDropReward(reward, gameDisplayName);
+        Embed embed = _discordEmbedBuilderService.BuildEmbedForTwitchDropReward(drop);
         await _discordBotClient.SendMessageAsync(embed);
 
-        IEnumerable<Guid> timeBasedDropIds = reward.TimeBasedDrops.Select(drop => drop.Id);
-        await _alertHistoryService.RecordDropNotificationSentAsync(reward.Id, timeBasedDropIds);
+        IEnumerable<Guid> timeBasedDropIds = drop.TimeBasedDrops.Select(drop => drop.Id);
+        await _alertHistoryService.RecordDropNotificationSentAsync(drop.Id, timeBasedDropIds);
 
-        // Avoid spamming Discord:
+        // Avoid spamming Discord and ensure we don't get close to their rate limits:
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
