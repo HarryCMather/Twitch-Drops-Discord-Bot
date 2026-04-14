@@ -33,11 +33,13 @@ public sealed class TwitchDropFinderService
             return dropsForRequestedGames;
         }
 
+        Dictionary<string, short> existingDropOwners = await _twitchDropsBotSqlRepository.GetDropOwnersMapAsync();
+
         try
         {
             Console.WriteLine("Checking for new Twitch drops...");
             IAsyncEnumerable<GetDropsResponse> getDropsResponse = _sunkwiApiClient.GetDropsAsync();
-            dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, alertableGameNames);
+            dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, games, existingDropOwners);
         }
         catch (HttpRequestException exception)
         {
@@ -51,13 +53,13 @@ public sealed class TwitchDropFinderService
         return dropsForRequestedGames;
     }
 
-    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<Game> games, Dictionary<string, short> dropOwners)
+    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
     {
         HashSet<string> existingGameNames = new(games.Select(game => game.Name));
 
-        IEnumerable<string> alertableGameNames = games.Where(game => game.ShouldAlert)
-                                                      .Select(game => game.Name);
-        HashSet<string> requestedGameNamesSet = new(alertableGameNames);
+        IEnumerable<Game> alertableGames = games.Where(game => game.ShouldAlert).ToList();
+        HashSet<string> requestedGameNamesSet = new(alertableGames.Select(game => game.Name));
+        Dictionary<string, short> gamesMap = alertableGames.ToDictionary(game => game.Name, game => game.Id);
 
         // Whilst this isn't necessary for extracting the drops themselves, it is meaningful to track this in the
         // database in-case Twitch/Game authors change the names (like with Siege vs Siege X within the past year):
