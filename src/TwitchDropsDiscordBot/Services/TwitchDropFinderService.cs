@@ -68,7 +68,7 @@ public sealed class TwitchDropFinderService
         // The SunkwiApi is returning DateTimes in the ISO-8601 format, so assuming UTC should (hopefully) be appropriate here:
         DateTimeOffset currentUtcDateTime = _timeProvider.GetUtcNow();
 
-        List<GetDropsResponse> dropsForRequestedGames = [];
+        List<Drop> dropsForRequestedGames = [];
         await foreach (GetDropsResponse drop in drops)
         {
             // Don't need to perform a contains check against foundGameNames, as Add will only Add if the element isn't already present:
@@ -90,6 +90,11 @@ public sealed class TwitchDropFinderService
                 if (drop.Rewards.Count > 0)
                 {
                     dropsForRequestedGames.Add(drop);
+                    foreach (GetDropsReward dropReward in drop.Rewards)
+
+                        Drop dropForRequestedGame = ConvertToDrop(dropReward, drop.GameDisplayName, gameId, dropOwnerId);
+                        dropsForRequestedGames.Add(dropForRequestedGame);
+                    }
                 }
                 else
                 {
@@ -101,6 +106,46 @@ public sealed class TwitchDropFinderService
         await _twitchDropsBotSqlRepository.InsertNewGamesAsync(foundGameNames);
 
         return dropsForRequestedGames;
+    }
+
+
+    private static Drop ConvertToDrop(GetDropsReward inputDrop, string gameName, short gameId, short dropOwnerId)
+    {
+        List<TimeBasedDrop> timeBasedDrops = ConvertToTimeBasedDrop(inputDrop.TimeBasedDrops, inputDrop.Id);
+
+        Drop dropForRequestedGame = new()
+        {
+            Id = inputDrop.Id,
+            GameName = gameName,
+            GameId = gameId,
+            DropOwner = inputDrop.Owner.Name,
+            DropOwnerId = dropOwnerId,
+            Name = inputDrop.Name,
+            Description = inputDrop.Description,
+            AccountLinkUrl = inputDrop.AccountLinkUrl,
+            DetailsUrl = inputDrop.DetailsUrl,
+            StartsAt = inputDrop.StartsAt,
+            EndsAt = inputDrop.EndsAt,
+            TimeBasedDrops = timeBasedDrops
+        };
+
+        return dropForRequestedGame;
+    }
+
+    private static List<TimeBasedDrop> ConvertToTimeBasedDrop(List<GetDropsTimeBasedDrop> inputDrops, Guid parentDropId)
+    {
+        List<TimeBasedDrop> timeBasedDrops = inputDrops.Select(timeBasedDrop => new TimeBasedDrop
+        {
+            Id = timeBasedDrop.Id,
+            ParentDropId = parentDropId,
+            Name =  timeBasedDrop.Name,
+            StartsAt = timeBasedDrop.StartsAt,
+            EndsAt = timeBasedDrop.EndsAt,
+            RequiredMinutesWatched = timeBasedDrop.RequiredMinutesWatched,
+            AlertedOn = null // Set this when the alert is actually performed, as I want to avoid instances where this is erroneously set too early
+        }).ToList();
+
+        return timeBasedDrops;
     }
 
     private static bool IsBetweenDateTimes(DateTimeOffset dateTime, DateTimeOffset startsAt, DateTimeOffset endsAt)
