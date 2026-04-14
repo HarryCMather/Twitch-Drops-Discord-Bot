@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Models.SunkwiApi;
+using TwitchDropsDiscordBot.Persistence.Interfaces;
 
 namespace TwitchDropsDiscordBot.Persistence;
 
