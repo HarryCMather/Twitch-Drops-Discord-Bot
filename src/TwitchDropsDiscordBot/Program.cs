@@ -109,16 +109,23 @@ internal static class Program
             "Counter-Strike"
         ];
 
-        IEnumerable<Game> games = gameNamesToSeed.Select(gameName => new Game
-        {
-            Name = gameName,
-            ShouldAlert = true
-        });
-
         await using (AsyncServiceScope serviceScope = serviceProvider.CreateAsyncScope())
         {
             TwitchDropsBotSqlRepository sqlRepository = serviceScope.ServiceProvider.GetRequiredService<TwitchDropsBotSqlRepository>();
-            await sqlRepository.InsertGamesAsync(games);
+
+            IEnumerable<string> existingGames = await sqlRepository.GetExistingMatchingGamesAsync(gameNamesToSeed);
+            List<Game> games = gameNamesToSeed.Except(existingGames)
+                                              .Select(gameName => new Game
+                                              {
+                                                  Name = gameName,
+                                                  ShouldAlert = true
+                                              })
+                                              .ToList();
+
+            if (games.Count > 0)
+            {
+                await sqlRepository.InsertGamesAsync(games);
+            }
         }
     }
 }
