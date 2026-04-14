@@ -1,5 +1,6 @@
 ﻿using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Entities;
 
@@ -18,6 +19,23 @@ public sealed class TwitchDropsBotSqlRepository
         _dbContext = dbContext;
     }
 
+    public async Task<Dictionary<string, short>> GetDropOwnersMapAsync()
+    {
+        return await _dbContext.DropOwners.ToDictionaryAsync(dropOwner => dropOwner.Name,
+                                                                          dropOwner => dropOwner.Id);
+    }
+
+    public async Task<short> InsertDropOwnerAsync(string dropOwnerName)
+    {
+        EntityEntry<DropOwner> insertedEntity = await _dbContext.DropOwners.AddAsync(new DropOwner
+        {
+            Name = dropOwnerName
+        });
+
+        await _dbContext.SaveChangesAsync();
+        return insertedEntity.Entity.Id;
+    }
+
     public async Task<bool> HasDropNotificationBeenSentAsync(Guid dropId, Guid timeBasedDropId)
     {
         // Whilst this isn't going to be an issue considering the small scale of this application,
@@ -27,6 +45,19 @@ public sealed class TwitchDropsBotSqlRepository
         return await _dbContext.TimeBasedDrops.AnyAsync(timeBasedDrop => timeBasedDrop.Id == timeBasedDropId &&
                                                                          timeBasedDrop.ParentDropId == dropId &&
                                                                          timeBasedDrop.AlertedOn == null);
+    }
+
+    public async Task InsertDropNotificationSentAsync(Guid dropId, Guid timeBasedDropId)
+    {
+        // Consider switching this to bulk when restructuring the project:
+        bool dropExists = await _dbContext.Drops.AnyAsync(drop => drop.Id == dropId);
+        if (!dropExists)
+        {
+            await _dbContext.Drops.Add(new Drop
+            {
+
+            })
+        }
     }
 
     public async Task<List<Game>> GetGamesAsync()
