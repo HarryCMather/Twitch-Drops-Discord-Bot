@@ -104,6 +104,7 @@ internal static class Program
     {
         List<string> gameNamesToSeed = [
             "Rainbow Six Siege X",
+            "Rainbow Six Siege",
             "Phasmophobia",
             "Counter-Strike"
         ];
