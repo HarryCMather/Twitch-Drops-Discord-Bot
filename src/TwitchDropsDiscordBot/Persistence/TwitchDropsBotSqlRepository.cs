@@ -73,31 +73,20 @@ public sealed class TwitchDropsBotSqlRepository
         return await query.ToListAsync();
     }
 
+    public async Task<IEnumerable<string>> GetExistingMatchingGamesAsync(List<string> gameNames)
+    {
+        IQueryable<string> query = _dbContext.Games.Where(dbGame => gameNames.Contains(dbGame.Name))
+                                                   .Select(game => game.Name);
+        return await query.ToListAsync();
+    }
+
     public async Task InsertGamesAsync(IEnumerable<Game> games)
     {
         await _dbContext.BulkInsertAsync(games, new BulkConfig
         {
-            PropertiesToIncludeOnCompare = [ "name" ],
-            SetOutputIdentity = false
-        });
-    }
-
-    public async Task InsertNewGamesAsync(IEnumerable<string> distinctFoundGameNames)
-    {
-        List<string> existingGameNames = await _dbContext.Games.Select(game => game.Name)
-                                                               .ToListAsync();
-
-        IEnumerable<Game> newGames = distinctFoundGameNames.Except(existingGameNames)
-                                                           .Select(gameName => new Game
-                                                           {
-                                                               Name = gameName,
-                                                               ShouldAlert = false
-                                                           });
-
-        await _dbContext.BulkInsertAsync(newGames, new BulkConfig
-        {
-            PropertiesToIncludeOnCompare = [ "name" ],
-            SetOutputIdentity = false
+            PropertiesToIncludeOnCompare = [ nameof(Game.Name) ],
+            SetOutputIdentity = false,
+            ConflictOption = ConflictOption.Ignore
         });
     }
 }
