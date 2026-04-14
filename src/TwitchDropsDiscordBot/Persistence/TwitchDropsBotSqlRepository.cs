@@ -29,10 +29,9 @@ public sealed class TwitchDropsBotSqlRepository
                                                                          timeBasedDrop.AlertedOn == null);
     }
 
-    public async Task<List<string>> GetAlertableGameNamesAsync()
+    public async Task<List<Game>> GetGamesAsync()
     {
-        IQueryable<string> query = _dbContext.Games.Where(game => game.ShouldAlert)
-                                                   .Select(game => game.Name);
+        IQueryable<Game> query = _dbContext.Games;
         return await query.ToListAsync();
     }
 

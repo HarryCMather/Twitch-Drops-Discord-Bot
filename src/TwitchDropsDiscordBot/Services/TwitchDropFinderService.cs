@@ -26,8 +26,8 @@ public sealed class TwitchDropFinderService
     {
         List<GetDropsResponse> dropsForRequestedGames = [];
 
-        List<string> alertableGameNames = await _twitchDropsBotSqlRepository.GetAlertableGameNamesAsync();
-        if (alertableGameNames.Count == 0)
+        List<Game> games = await _twitchDropsBotSqlRepository.GetGamesAsync();
+        if (!games.Exists(game => game.ShouldAlert))
         {
             Console.WriteLine("No alertable games were set in the database. Skipping this iteration.");
             return dropsForRequestedGames;
@@ -51,9 +51,13 @@ public sealed class TwitchDropFinderService
         return dropsForRequestedGames;
     }
 
-    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<string> requestedGameNames)
+    private async Task<List<GetDropsResponse>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<Game> games, Dictionary<string, short> dropOwners)
     {
-        HashSet<string> requestedGameNamesSet = new(requestedGameNames);
+        HashSet<string> existingGameNames = new(games.Select(game => game.Name));
+
+        IEnumerable<string> alertableGameNames = games.Where(game => game.ShouldAlert)
+                                                      .Select(game => game.Name);
+        HashSet<string> requestedGameNamesSet = new(alertableGameNames);
 
         // Whilst this isn't necessary for extracting the drops themselves, it is meaningful to track this in the
         // database in-case Twitch/Game authors change the names (like with Siege vs Siege X within the past year):
@@ -65,8 +69,11 @@ public sealed class TwitchDropFinderService
         List<GetDropsResponse> dropsForRequestedGames = [];
         await foreach (GetDropsResponse drop in drops)
         {
-            // Don't need to perform a contains check here, as Add will only Add if the element isn't already present:
-            foundGameNames.Add(drop.GameDisplayName);
+            // Don't need to perform a contains check against foundGameNames, as Add will only Add if the element isn't already present:
+            if (!existingGameNames.Contains(drop.GameDisplayName))
+            {
+                foundGameNames.Add(drop.GameDisplayName);
+            }
 
             if (requestedGameNamesSet.Contains(drop.GameDisplayName) && IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt))
             {
