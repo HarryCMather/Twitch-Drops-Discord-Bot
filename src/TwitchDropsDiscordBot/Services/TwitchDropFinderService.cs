@@ -130,7 +130,7 @@ public sealed class TwitchDropFinderService
             Id = inputDrop.Id,
             GameName = gameName,
             GameId = gameId,
-            DropOwner = inputDrop.Owner.Name,
+            Owner = inputDrop.Owner.Name,
             DropOwnerId = dropOwnerId,
             Name = inputDrop.Name,
             Description = inputDrop.Description,

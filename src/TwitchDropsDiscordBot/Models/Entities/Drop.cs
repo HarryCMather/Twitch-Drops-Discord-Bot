@@ -8,7 +8,7 @@ public class Drop
 
     public short GameId { get; set; }
 
-    public string DropOwner { get; set; }
+    public string Owner { get; set; }
 
     public short DropOwnerId { get; set; }
 

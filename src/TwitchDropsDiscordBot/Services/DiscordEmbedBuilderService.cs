@@ -55,9 +55,9 @@ public sealed class DiscordEmbedBuilderService
 
     private static void AddDropRewardBaseDetails(EmbedBuilder embedBuilder, GetDropsReward dropReward)
     {
-        embedBuilder.AddField("Owner", dropReward.Owner.Name, false)
-                    .AddField("Starts", FormatDateTimeOffset(dropReward.StartsAt), false)
-                    .AddField("Ends", FormatDateTimeOffset(dropReward.EndsAt), false);
+        embedBuilder.AddField("Owner", drop.Owner, false)
+                    .AddField("Starts", FormatDateTimeOffset(drop.StartsAt), false)
+                    .AddField("Ends", FormatDateTimeOffset(drop.EndsAt), false);
     }
 
     private static void AddDropRewardTimeBasedDrops(EmbedBuilder embedBuilder, List<GetDropsTimeBasedDrop> timeBasedDrops)
