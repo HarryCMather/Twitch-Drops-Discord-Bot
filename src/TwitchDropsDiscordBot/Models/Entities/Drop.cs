@@ -25,4 +25,6 @@ public class Drop
     public DateTimeOffset EndsAt { get; set; }
 
     public List<TimeBasedDrop> TimeBasedDrops { get; set; }
+
+    public string Status { get; set; }
 }

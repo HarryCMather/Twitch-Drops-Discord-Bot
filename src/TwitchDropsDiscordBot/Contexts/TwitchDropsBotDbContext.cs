@@ -90,7 +90,8 @@ public sealed class TwitchDropsBotDbContext : DbContext
         modelBuilder.Entity<Drop>()
                     .Ignore(drop => drop.TimeBasedDrops)
                     .Ignore(drop => drop.GameName)
-                    .Ignore(drop => drop.Owner);
+                    .Ignore(drop => drop.Owner)
+                    .Ignore(drop => drop.Status);
 
         modelBuilder.Entity<Drop>()
                     .HasOne<DropOwner>()
