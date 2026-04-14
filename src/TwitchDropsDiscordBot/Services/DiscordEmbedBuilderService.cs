@@ -62,9 +62,6 @@ public sealed class DiscordEmbedBuilderService
 
     private static void AddDropRewardTimeBasedDrops(EmbedBuilder embedBuilder, List<GetDropsTimeBasedDrop> timeBasedDrops)
     {
-        IEnumerable<GetDropsTimeBasedDrop> orderedDrops = timeBasedDrops.OrderBy(drop => drop.StartsAt)
-                                                                        .ThenBy(drop => drop.RequiredMinutesWatched);
-
         foreach (GetDropsTimeBasedDrop timeBasedDrop in orderedDrops)
         {
             embedBuilder.AddField("Reward", $"{timeBasedDrop.Name} - Requires {FormatTimeDuration(timeBasedDrop.RequiredMinutesWatched)} watched", true);

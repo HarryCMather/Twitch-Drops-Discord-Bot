@@ -123,7 +123,7 @@ public sealed class TwitchDropFinderService
 
     private static Drop ConvertToDrop(GetDropsReward inputDrop, string gameName, short gameId, short dropOwnerId)
     {
-        List<TimeBasedDrop> timeBasedDrops = ConvertToTimeBasedDrop(inputDrop.TimeBasedDrops, inputDrop.Id);
+        List<TimeBasedDrop> timeBasedDrops = ConvertToTimeBasedDrops(inputDrop.TimeBasedDrops, inputDrop.Id);
 
         Drop dropForRequestedGame = new()
         {
@@ -144,7 +144,7 @@ public sealed class TwitchDropFinderService
         return dropForRequestedGame;
     }
 
-    private static List<TimeBasedDrop> ConvertToTimeBasedDrop(List<GetDropsTimeBasedDrop> inputDrops, Guid parentDropId)
+    private static List<TimeBasedDrop> ConvertToTimeBasedDrops(List<GetDropsTimeBasedDrop> inputDrops, Guid parentDropId)
     {
         List<TimeBasedDrop> timeBasedDrops = inputDrops.Select(timeBasedDrop => new TimeBasedDrop
         {
@@ -155,7 +155,9 @@ public sealed class TwitchDropFinderService
             EndsAt = timeBasedDrop.EndsAt,
             RequiredMinutesWatched = timeBasedDrop.RequiredMinutesWatched,
             AlertedOn = null // Set this when the alert is actually performed, as I want to avoid instances where this is erroneously set too early
-        }).ToList();
+        }).OrderBy(drop => drop.StartsAt)
+          .ThenBy(drop => drop.RequiredMinutesWatched)
+          .ToList();
 
         return timeBasedDrops;
     }
