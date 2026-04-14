@@ -11,6 +11,7 @@ using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot;
 
