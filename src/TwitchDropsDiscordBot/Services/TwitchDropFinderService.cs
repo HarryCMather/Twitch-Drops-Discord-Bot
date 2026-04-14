@@ -8,17 +8,14 @@ public sealed class TwitchDropFinderService
 {
     private readonly SunkwiApiClient _sunkwiApiClient;
     private readonly TwitchDropsBotSqlRepository _twitchDropsBotSqlRepository;
-    private readonly AlertHistoryService _alertHistoryService;
     private readonly TimeProvider _timeProvider;
 
     public TwitchDropFinderService(SunkwiApiClient sunkwiApiClient,
                                    TwitchDropsBotSqlRepository twitchDropsBotSqlRepository,
-                                   AlertHistoryService alertHistoryService,
                                    TimeProvider timeProvider)
     {
         _sunkwiApiClient = sunkwiApiClient;
         _twitchDropsBotSqlRepository = twitchDropsBotSqlRepository;
-        _alertHistoryService = alertHistoryService;
         _timeProvider = timeProvider;
     }
 
