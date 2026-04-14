@@ -84,18 +84,16 @@ public sealed class TwitchDropFinderService
                 RemoveRewardsWithNoTimeBasedDrops(drop.Rewards);
                 await RemoveRewardsThatHaveAlreadyBeenAlertedAsync(drop.Rewards);
 
-                if (drop.Rewards.Count > 0)
+                foreach (GetDropsReward dropReward in drop.Rewards)
                 {
-                    foreach (GetDropsReward dropReward in drop.Rewards)
-                    {
-                        short dropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(dropReward.Owner.Name, dropOwnersMap);
-                        short gameId = gamesMap[drop.GameDisplayName];
+                    short dropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(dropReward.Owner.Name, dropOwnersMap);
+                    short gameId = gamesMap[drop.GameDisplayName];
 
-                        Drop dropForRequestedGame = ConvertToDrop(dropReward, drop.GameDisplayName, gameId, dropOwnerId);
-                        dropsForRequestedGames.Add(dropForRequestedGame);
-                    }
+                    Drop dropForRequestedGame = ConvertToDrop(dropReward, drop.GameDisplayName, gameId, dropOwnerId);
+                    dropsForRequestedGames.Add(dropForRequestedGame);
                 }
-                else
+
+                if (drop.Rewards.Count == 0)
                 {
                     Console.WriteLine($"After filtering rewards, there were no new rewards left for game '{drop.GameDisplayName}'. Therefore, no notification will be sent for this drop.");
                 }
