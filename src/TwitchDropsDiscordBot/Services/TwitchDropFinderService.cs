@@ -89,8 +89,10 @@ public sealed class TwitchDropFinderService
 
                 if (drop.Rewards.Count > 0)
                 {
-                    dropsForRequestedGames.Add(drop);
                     foreach (GetDropsReward dropReward in drop.Rewards)
+                    {
+                        short dropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(dropReward.Owner.Name, dropOwnersMap);
+                        short gameId = gamesMap[drop.GameDisplayName];
 
                         Drop dropForRequestedGame = ConvertToDrop(dropReward, drop.GameDisplayName, gameId, dropOwnerId);
                         dropsForRequestedGames.Add(dropForRequestedGame);
@@ -108,6 +110,21 @@ public sealed class TwitchDropFinderService
         return dropsForRequestedGames;
     }
 
+    private async ValueTask<short> GetDropOwnerIdFromDropOwnerNameAsync(string dropOwnerName, Dictionary<string, short> existingDropOwners)
+    {
+        // I've opted to use ValueTask here, as the likelihood of a DB insert being required is minimal after the first few runs.
+        // so the likelihood is the async flow will never be hit.
+        // This is because the Drop Owner is usually the Game Publisher, which won't change.
+        // This also helps ensure this doesn't become an N+1 problem.
+
+        if (!existingDropOwners.TryGetValue(dropOwnerName, out short dropOwnerId))
+        {
+            dropOwnerId = await _twitchDropsBotSqlRepository.InsertDropOwnerAsync(dropOwnerName);
+            existingDropOwners.Add(dropOwnerName, dropOwnerId);
+        }
+
+        return dropOwnerId;
+    }
 
     private static Drop ConvertToDrop(GetDropsReward inputDrop, string gameName, short gameId, short dropOwnerId)
     {
