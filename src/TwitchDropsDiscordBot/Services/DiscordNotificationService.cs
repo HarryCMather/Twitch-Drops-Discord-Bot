@@ -2,20 +2,21 @@
 using Discord;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence;
+using TwitchDropsDiscordBot.Persistence.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
 public sealed class DiscordNotificationService : IAsyncDisposable
 {
     private readonly DiscordEmbedBuilderService _discordEmbedBuilderService;
-    private readonly TwitchDropsBotSqlRepository _twitchDropsBotSqlRepository;
+    private readonly IDropsRepository _dropsRepository;
     private readonly DiscordBotClient _discordBotClient;
     private readonly TimeProvider _timeProvider;
 
-    public DiscordNotificationService(DiscordEmbedBuilderService discordEmbedBuilderService, TwitchDropsBotSqlRepository twitchDropsBotSqlRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
+    public DiscordNotificationService(DiscordEmbedBuilderService discordEmbedBuilderService, IDropsRepository dropsRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
     {
         _discordEmbedBuilderService = discordEmbedBuilderService;
-        _twitchDropsBotSqlRepository = twitchDropsBotSqlRepository;
+        _dropsRepository = dropsRepository;
         _discordBotClient = discordBotClient;
         _timeProvider = timeProvider;
     }
@@ -44,8 +45,8 @@ public sealed class DiscordNotificationService : IAsyncDisposable
         }
 
         IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
-        await _twitchDropsBotSqlRepository.InsertNewDropsAsync(drops);
-        await _twitchDropsBotSqlRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
+        await _dropsRepository.InsertNewDropsAsync(drops);
+        await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
     }
 
     private async Task SendTwitchDropRewardNotificationAsync(Drop drop)

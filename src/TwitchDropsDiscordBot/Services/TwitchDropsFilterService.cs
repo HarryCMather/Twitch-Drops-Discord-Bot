@@ -1,18 +1,19 @@
 ﻿using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.Entities;
-using TwitchDropsDiscordBot.Persistence;
+using TwitchDropsDiscordBot.Persistence.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
 public sealed class TwitchDropsFilterService
 {
     private readonly TimeProvider _timeProvider;
-    private readonly TwitchDropsBotSqlRepository _twitchDropsBotSqlRepository;
+    private readonly IDropsRepository _dropsRepository;
 
     public TwitchDropsFilterService(TimeProvider timeProvider, TwitchDropsBotSqlRepository twitchDropsBotSqlRepository)
+                                    IDropsRepository dropsRepository)
     {
         _timeProvider = timeProvider;
-        _twitchDropsBotSqlRepository = twitchDropsBotSqlRepository;
+        _dropsRepository = dropsRepository;
     }
 
     public async Task<DropsFilterResult> FilterDropsAsync(IEnumerable<Drop> foundDrops,
@@ -122,7 +123,7 @@ public sealed class TwitchDropsFilterService
         List<TimeBasedDrop> unalertedDrops = [];
         foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
         {
-            bool alreadyAlerted = await _twitchDropsBotSqlRepository.HasDropNotificationBeenSentAsync(drop.Id, timeBasedDrop.Id);
+            bool alreadyAlerted = await _dropsRepository.HasDropNotificationBeenSentAsync(drop.Id, timeBasedDrop.Id);
             if (!alreadyAlerted)
             {
                 unalertedDrops.Add(timeBasedDrop);
