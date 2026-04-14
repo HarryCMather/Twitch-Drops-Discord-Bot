@@ -7,12 +7,15 @@ namespace TwitchDropsDiscordBot.Services;
 public sealed class TwitchDropsFilterService
 {
     private readonly TimeProvider _timeProvider;
+    private readonly IDropOwnerRepository _dropOwnerRepository;
     private readonly IDropsRepository _dropsRepository;
 
-    public TwitchDropsFilterService(TimeProvider timeProvider, TwitchDropsBotSqlRepository twitchDropsBotSqlRepository)
+    public TwitchDropsFilterService(TimeProvider timeProvider,
+                                    IDropOwnerRepository dropOwnerRepository,
                                     IDropsRepository dropsRepository)
     {
         _timeProvider = timeProvider;
+        _dropOwnerRepository = dropOwnerRepository;
         _dropsRepository = dropsRepository;
     }
 
@@ -87,7 +90,7 @@ public sealed class TwitchDropsFilterService
 
         if (!existingDropOwners.TryGetValue(dropOwnerName, out short dropOwnerId))
         {
-            dropOwnerId = await _twitchDropsBotSqlRepository.InsertDropOwnerAsync(dropOwnerName);
+            dropOwnerId = await _dropOwnerRepository.InsertDropOwnerAsync(dropOwnerName);
             existingDropOwners.Add(dropOwnerName, dropOwnerId);
         }
 

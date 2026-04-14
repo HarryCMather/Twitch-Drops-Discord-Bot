@@ -1,6 +1,6 @@
 ﻿using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.Entities;
-using TwitchDropsDiscordBot.Persistence;
+using TwitchDropsDiscordBot.Persistence.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
@@ -8,29 +8,32 @@ public sealed class TwitchDropFinderService
 {
     private readonly TwitchDropsFilterService _twitchDropsFilterService;
     private readonly ITwitchDropFinderRepository _twitchDropsFinderRepository;
-    private readonly TwitchDropsBotSqlRepository _twitchDropsBotSqlRepository;
+    private readonly IGamesRepository _gamesRepository;
+    private readonly IDropOwnerRepository _dropOwnerRepository;
 
     public TwitchDropFinderService(TwitchDropsFilterService twitchDropsFilterService,
                                    ITwitchDropFinderRepository twitchDropsFinderRepository,
-                                   TwitchDropsBotSqlRepository twitchDropsBotSqlRepository)
+                                   IGamesRepository gamesRepository,
+                                   IDropOwnerRepository dropOwnerRepository)
     {
         _twitchDropsFilterService = twitchDropsFilterService;
         _twitchDropsFinderRepository = twitchDropsFinderRepository;
-        _twitchDropsBotSqlRepository = twitchDropsBotSqlRepository;
+        _gamesRepository = gamesRepository;
+        _dropOwnerRepository = dropOwnerRepository;
     }
 
     public async Task<List<Drop>> FindNewDropsAsync()
     {
         List<Drop> dropsForRequestedGames = [];
 
-        List<Game> games = await _twitchDropsBotSqlRepository.GetGamesAsync();
+        List<Game> games = await _gamesRepository.GetGamesAsync();
         if (!games.Exists(game => game.ShouldAlert))
         {
             Console.WriteLine("No alertable games were set in the database. Skipping this iteration.");
             return dropsForRequestedGames;
         }
 
-        Dictionary<string, short> existingDropOwners = await _twitchDropsBotSqlRepository.GetDropOwnersMapAsync();
+        Dictionary<string, short> existingDropOwners = await _dropOwnerRepository.GetDropOwnersMapAsync();
 
         try
         {
@@ -60,7 +63,7 @@ public sealed class TwitchDropFinderService
         DropsFilterResult dropsFilterResult = await _twitchDropsFilterService.FilterDropsAsync(drops, existingGameNames, alertableGames, gamesMap, dropOwnersMap);
         if (dropsFilterResult.NewGames.Count > 0)
         {
-            await _twitchDropsBotSqlRepository.InsertGamesAsync(dropsFilterResult.NewGames);
+            await _gamesRepository.InsertGamesAsync(dropsFilterResult.NewGames);
         }
 
         return dropsFilterResult.ValidDrops;

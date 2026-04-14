@@ -9,6 +9,7 @@ using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence;
+using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services;
 
 namespace TwitchDropsDiscordBot;
@@ -34,9 +35,10 @@ internal static class Program
                                                                                                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                                                                                                    .UseSnakeCaseNamingConvention());
 
-        builder.Services.AddScoped<SunkwiApiClient>()
+        builder.Services.AddScoped<ITwitchDropFinderRepository, SunkwiApiClient>()
                         .AddScoped<DiscordBotClient>()
-                        .AddScoped<TwitchDropsBotSqlRepository>()
+                        .AddScoped<IGamesRepository, GamesSqlRepository>()
+                        .AddScoped<IDropOwnerRepository, DropOwnerSqlRepository>()
                         .AddScoped<IDropsRepository, DropsSqlRepository>()
                         .AddScoped<DiscordEmbedBuilderService>()
                         .AddScoped<DiscordNotificationService>()
@@ -113,9 +115,9 @@ internal static class Program
 
         await using (AsyncServiceScope serviceScope = serviceProvider.CreateAsyncScope())
         {
-            TwitchDropsBotSqlRepository sqlRepository = serviceScope.ServiceProvider.GetRequiredService<TwitchDropsBotSqlRepository>();
+            IGamesRepository gamesRepository = serviceScope.ServiceProvider.GetRequiredService<IGamesRepository>();
 
-            IEnumerable<string> existingGames = await sqlRepository.GetExistingMatchingGamesAsync(gameNamesToSeed);
+            IEnumerable<string> existingGames = await gamesRepository.GetExistingMatchingGamesAsync(gameNamesToSeed);
             List<Game> games = gameNamesToSeed.Except(existingGames)
                                               .Select(gameName => new Game
                                               {
@@ -126,7 +128,7 @@ internal static class Program
 
             if (games.Count > 0)
             {
-                await sqlRepository.InsertGamesAsync(games);
+                await gamesRepository.InsertGamesAsync(games);
             }
         }
     }
