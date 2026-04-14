@@ -40,9 +40,10 @@ internal static class Program
                         .AddScoped<IGamesRepository, GamesSqlRepository>()
                         .AddScoped<IDropOwnerRepository, DropOwnerSqlRepository>()
                         .AddScoped<IDropsRepository, DropsSqlRepository>()
-                        .AddScoped<DiscordEmbedBuilderService>()
-                        .AddScoped<DiscordNotificationService>()
-                        .AddScoped<TwitchDropFinderService>();
+                        .AddScoped<IEmbedBuilderService, DiscordEmbedBuilderService>()
+                        .AddScoped<INotificationService, DiscordNotificationService>()
+                        .AddScoped<ITwitchDropsFilterService, TwitchDropsFilterService>()
+                        .AddScoped<ITwitchDropFinderService, TwitchDropFinderService>();
 
         builder.Services.AddHostedService<TwitchDropsCheckerBackgroundService>();
 
@@ -72,16 +73,16 @@ internal static class Program
 
         Console.WriteLine(startupCompleteMessage);
 
-        await using (DiscordNotificationService discordNotificationService = serviceProvider.GetRequiredService<DiscordNotificationService>())
+        await using (INotificationService notificationService = serviceProvider.GetRequiredService<INotificationService>())
         {
             DiscordConfiguration discordConfiguration = serviceProvider.GetRequiredService<IOptions<DiscordConfiguration>>().Value;
-            await discordNotificationService.SendStartupCompleteNotificationAsync(discordConfiguration.BotToken,
-                                                                                  discordConfiguration.TargetChannelId,
-                                                                                  GCSettings.IsServerGC,
-                                                                                  GCSettings.LargeObjectHeapCompactionMode,
-                                                                                  isDevelopment,
-                                                                                  Environment.ProcessId,
-                                                                                  Environment.MachineName);
+            await notificationService.SendStartupCompleteNotificationAsync(discordConfiguration.BotToken,
+                                                                           discordConfiguration.TargetChannelId,
+                                                                           GCSettings.IsServerGC,
+                                                                           GCSettings.LargeObjectHeapCompactionMode,
+                                                                           isDevelopment,
+                                                                           Environment.ProcessId,
+                                                                           Environment.MachineName);
         }
     }
 
