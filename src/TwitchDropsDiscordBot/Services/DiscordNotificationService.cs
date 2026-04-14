@@ -7,15 +7,17 @@ namespace TwitchDropsDiscordBot.Services;
 
 public sealed class DiscordNotificationService : IAsyncDisposable
 {
-    private readonly AlertHistoryService _alertHistoryService;
     private readonly DiscordEmbedBuilderService _discordEmbedBuilderService;
+    private readonly TwitchDropsBotSqlRepository _twitchDropsBotSqlRepository;
     private readonly DiscordBotClient _discordBotClient;
+    private readonly TimeProvider _timeProvider;
 
-    public DiscordNotificationService(AlertHistoryService alertHistoryService, DiscordEmbedBuilderService discordEmbedBuilderService, DiscordBotClient discordBotClient)
+    public DiscordNotificationService(DiscordEmbedBuilderService discordEmbedBuilderService, TwitchDropsBotSqlRepository twitchDropsBotSqlRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
     {
-        _alertHistoryService = alertHistoryService;
         _discordEmbedBuilderService = discordEmbedBuilderService;
+        _twitchDropsBotSqlRepository = twitchDropsBotSqlRepository;
         _discordBotClient = discordBotClient;
+        _timeProvider = timeProvider;
     }
 
     public async Task SendStartupCompleteNotificationAsync(string discordBotToken, ulong discordBotChannelId, bool isServerGc, GCLargeObjectHeapCompactionMode lohCompactionMode, bool isDevelopment, int processId, string hostname)
@@ -40,6 +42,10 @@ public sealed class DiscordNotificationService : IAsyncDisposable
         {
             await SendTwitchDropRewardNotificationAsync(drop);
         }
+
+        IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
+        await _twitchDropsBotSqlRepository.InsertNewDropsAsync(drops);
+        await _twitchDropsBotSqlRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
     }
 
     private async Task SendTwitchDropRewardNotificationAsync(Drop drop)
@@ -47,8 +53,11 @@ public sealed class DiscordNotificationService : IAsyncDisposable
         Embed embed = _discordEmbedBuilderService.BuildEmbedForTwitchDropReward(drop);
         await _discordBotClient.SendMessageAsync(embed);
 
-        IEnumerable<Guid> timeBasedDropIds = drop.TimeBasedDrops.Select(drop => drop.Id);
-        await _alertHistoryService.RecordDropNotificationSentAsync(drop.Id, timeBasedDropIds);
+        DateTimeOffset utcTimeStamp = _timeProvider.GetUtcNow();
+        foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
+        {
+            timeBasedDrop.AlertedOn = utcTimeStamp;
+        }
 
         // Avoid spamming Discord and ensure we don't get close to their rate limits:
         await Task.Delay(TimeSpan.FromSeconds(1));

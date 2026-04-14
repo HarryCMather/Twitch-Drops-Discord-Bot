@@ -47,17 +47,24 @@ public sealed class TwitchDropsBotSqlRepository
                                                                          timeBasedDrop.AlertedOn == null);
     }
 
-    public async Task InsertDropNotificationSentAsync(Guid dropId, Guid timeBasedDropId)
+    public async Task InsertNewDropsAsync(List<Drop> drops)
     {
-        // Consider switching this to bulk when restructuring the project:
-        bool dropExists = await _dbContext.Drops.AnyAsync(drop => drop.Id == dropId);
-        if (!dropExists)
-        {
-            await _dbContext.Drops.Add(new Drop
-            {
+        IEnumerable<Guid> dropIds = drops.Select(drop => drop.Id);
 
-            })
-        }
+        HashSet<Guid> existingIds = await _dbContext.Drops.Where(dbDrop => dropIds.Contains(dbDrop.Id))
+                                                          .Select(drop => drop.Id)
+                                                          .ToHashSetAsync();
+
+        IEnumerable<Drop> newDrops = drops.Where(drop => !existingIds.Contains(drop.Id));
+        await _dbContext.BulkInsertAsync(newDrops);
+    }
+
+    public async Task InsertTimeBasedDropsAsync(IEnumerable<TimeBasedDrop> timeBasedDrops)
+    {
+        // I'm opting not to perform a similar contains check to what I wrote for InsertNewDropsAsync
+        // because I've already enforced when validating and parsing the drops within the TwitchDropsFinder service
+        // that existing TimeBasedDrops will be filtered out early:
+        await _dbContext.BulkInsertAsync(timeBasedDrops);
     }
 
     public async Task<List<Game>> GetGamesAsync()
