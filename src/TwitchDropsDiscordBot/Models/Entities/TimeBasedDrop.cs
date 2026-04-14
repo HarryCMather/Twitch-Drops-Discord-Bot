@@ -8,7 +8,7 @@ public class TimeBasedDrop
 
     public string Name { get; set; }
 
-    public DateTimeOffset StarsAt { get; set; }
+    public DateTimeOffset StartsAt { get; set; }
 
     public DateTimeOffset EndsAt { get; set; }
 
