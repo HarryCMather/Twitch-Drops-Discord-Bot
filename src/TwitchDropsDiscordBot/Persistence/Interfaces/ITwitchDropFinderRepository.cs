@@ -1,6 +1,6 @@
 ﻿using TwitchDropsDiscordBot.Models.Entities;
 
-namespace TwitchDropsDiscordBot.Persistence;
+namespace TwitchDropsDiscordBot.Persistence.Interfaces;
 
 public interface ITwitchDropFinderRepository
 {
