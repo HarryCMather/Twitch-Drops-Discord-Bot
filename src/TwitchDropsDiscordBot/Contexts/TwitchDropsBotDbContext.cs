@@ -86,6 +86,12 @@ public sealed class TwitchDropsBotDbContext : DbContext
                     .Property(drop => drop.Description)
                     .IsRequired();
 
+        // Opting to manage these separately:
+        modelBuilder.Entity<Drop>()
+                    .Ignore(drop => drop.TimeBasedDrops)
+                    .Ignore(drop => drop.GameName)
+                    .Ignore(drop => drop.DropOwner);
+
         modelBuilder.Entity<Drop>()
                     .HasOne<DropOwner>()
                     .WithMany()
