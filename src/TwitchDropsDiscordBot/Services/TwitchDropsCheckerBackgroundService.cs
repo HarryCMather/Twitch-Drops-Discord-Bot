@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Models.Entities;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
@@ -44,9 +45,9 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                         Console.WriteLine("Sending notifications for new drops...");
 
                         DiscordConfiguration discordConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<DiscordConfiguration>>().Value;
-                        await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
+                        await using (INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>())
                         {
-                            await discordNotificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops);
+                            await notificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops);
                         }
 
                         Console.WriteLine("Finished sending notifications for new drops.");

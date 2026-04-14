@@ -3,19 +3,20 @@ using Discord;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
-public sealed class DiscordNotificationService : IAsyncDisposable
+public sealed class DiscordNotificationService : INotificationService
 {
-    private readonly DiscordEmbedBuilderService _discordEmbedBuilderService;
+    private readonly IEmbedBuilderService _embedBuilderService;
     private readonly IDropsRepository _dropsRepository;
     private readonly DiscordBotClient _discordBotClient;
     private readonly TimeProvider _timeProvider;
 
-    public DiscordNotificationService(DiscordEmbedBuilderService discordEmbedBuilderService, IDropsRepository dropsRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
+    public DiscordNotificationService(IEmbedBuilderService embedBuilderService, IDropsRepository dropsRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
     {
-        _discordEmbedBuilderService = discordEmbedBuilderService;
+        _embedBuilderService = embedBuilderService;
         _dropsRepository = dropsRepository;
         _discordBotClient = discordBotClient;
         _timeProvider = timeProvider;
@@ -28,7 +29,7 @@ public sealed class DiscordNotificationService : IAsyncDisposable
             await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
         }
 
-        Embed embed = _discordEmbedBuilderService.BuildEmbedForStartupComplete(isServerGc, lohCompactionMode, isDevelopment, processId, hostname);
+        Embed embed = _embedBuilderService.BuildEmbedForStartupComplete(isServerGc, lohCompactionMode, isDevelopment, processId, hostname);
         await _discordBotClient.SendMessageAsync(embed);
     }
 
@@ -51,7 +52,7 @@ public sealed class DiscordNotificationService : IAsyncDisposable
 
     private async Task SendTwitchDropRewardNotificationAsync(Drop drop)
     {
-        Embed embed = _discordEmbedBuilderService.BuildEmbedForTwitchDropReward(drop);
+        Embed embed = _embedBuilderService.BuildEmbedForTwitchDropReward(drop);
         await _discordBotClient.SendMessageAsync(embed);
 
         DateTimeOffset utcTimeStamp = _timeProvider.GetUtcNow();

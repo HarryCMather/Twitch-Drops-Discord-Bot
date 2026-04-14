@@ -1,10 +1,11 @@
 ﻿using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
-public sealed class TwitchDropsFilterService
+public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
 {
     private readonly TimeProvider _timeProvider;
     private readonly IDropOwnerRepository _dropOwnerRepository;

@@ -1,10 +1,11 @@
 ﻿using System.Runtime;
 using Discord;
 using TwitchDropsDiscordBot.Models.Entities;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
-public sealed class DiscordEmbedBuilderService
+public sealed class DiscordEmbedBuilderService : IEmbedBuilderService
 {
     private readonly TimeProvider _timeProvider;
 

@@ -1,17 +1,18 @@
 ﻿using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
-public sealed class TwitchDropFinderService
+public sealed class TwitchDropFinderService : ITwitchDropFinderService
 {
-    private readonly TwitchDropsFilterService _twitchDropsFilterService;
+    private readonly ITwitchDropsFilterService _twitchDropsFilterService;
     private readonly ITwitchDropFinderRepository _twitchDropsFinderRepository;
     private readonly IGamesRepository _gamesRepository;
     private readonly IDropOwnerRepository _dropOwnerRepository;
 
-    public TwitchDropFinderService(TwitchDropsFilterService twitchDropsFilterService,
+    public TwitchDropFinderService(ITwitchDropsFilterService twitchDropsFilterService,
                                    ITwitchDropFinderRepository twitchDropsFinderRepository,
                                    IGamesRepository gamesRepository,
                                    IDropOwnerRepository dropOwnerRepository)
