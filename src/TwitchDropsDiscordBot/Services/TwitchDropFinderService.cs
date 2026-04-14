@@ -35,8 +35,8 @@ public sealed class TwitchDropFinderService
         try
         {
             Console.WriteLine("Checking for new Twitch drops...");
-            IAsyncEnumerable<GetDropsResponse> getDropsResponse = _sunkwiApiClient.GetDropsAsync();
-            dropsForRequestedGames = await ExtractDropsForRequestedGames(getDropsResponse, games, existingDropOwners);
+            IEnumerable<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync();
+            dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners);
         }
         catch (HttpRequestException exception)
         {
@@ -50,7 +50,7 @@ public sealed class TwitchDropFinderService
         return dropsForRequestedGames;
     }
 
-    private async Task<List<Drop>> ExtractDropsForRequestedGames(IAsyncEnumerable<GetDropsResponse> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
+    private async Task<List<Drop>> ExtractDropsForRequestedGames(IEnumerable<Drop> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
     {
         HashSet<string> existingGameNames = new(games.Select(game => game.Name));
 
