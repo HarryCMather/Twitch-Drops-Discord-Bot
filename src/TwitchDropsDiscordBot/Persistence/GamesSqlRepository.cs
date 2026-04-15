@@ -30,11 +30,6 @@ public sealed class GamesSqlRepository : IGamesRepository
 
     public async Task InsertGamesAsync(IEnumerable<Game> games)
     {
-        await _dbContext.BulkInsertAsync(games, new BulkConfig
-        {
-            PropertiesToIncludeOnCompare = [ nameof(Game.Name) ],
-            SetOutputIdentity = false,
-            ConflictOption = ConflictOption.Ignore
-        });
+        await _dbContext.BulkInsertAsync(games);
     }
 }
