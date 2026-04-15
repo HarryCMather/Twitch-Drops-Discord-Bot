@@ -1,10 +1,11 @@
 ﻿using System.Runtime;
 using Discord;
-using TwitchDropsDiscordBot.Models.SunkwiApi;
+using TwitchDropsDiscordBot.Models.Entities;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
-public sealed class DiscordEmbedBuilderService
+public sealed class DiscordEmbedBuilderService : IEmbedBuilderService
 {
     private readonly TimeProvider _timeProvider;
 
@@ -31,56 +32,53 @@ public sealed class DiscordEmbedBuilderService
         return embedBuilder.Build();
     }
 
-    public Embed BuildEmbedForTwitchDropReward(GetDropsReward dropReward, string gameDisplayName)
+    public Embed BuildEmbedForTwitchDropReward(Drop drop)
     {
         EmbedBuilder embedBuilder = new();
 
-        AddDropRewardInitialDetails(embedBuilder, dropReward, gameDisplayName);
-        AddDropRewardBaseDetails(embedBuilder, dropReward);
-        AddDropRewardTimeBasedDrops(embedBuilder, dropReward.TimeBasedDrops);
-        AddDropRewardLinks(embedBuilder, dropReward);
+        AddDropRewardInitialDetails(embedBuilder, drop);
+        AddDropRewardBaseDetails(embedBuilder, drop);
+        AddDropRewardTimeBasedDrops(embedBuilder, drop.TimeBasedDrops);
+        AddDropRewardLinks(embedBuilder, drop);
 
         return embedBuilder.Build();
     }
 
-    private void AddDropRewardInitialDetails(EmbedBuilder embedBuilder, GetDropsReward dropReward, string gameDisplayName)
+    private void AddDropRewardInitialDetails(EmbedBuilder embedBuilder, Drop drop)
     {
-        string dropSingularOrPlural = dropReward.TimeBasedDrops.Count == 1 ? "Drop" : "Drops";
+        string dropSingularOrPlural = drop.TimeBasedDrops.Count == 1 ? "Drop" : "Drops";
 
-        embedBuilder.WithTitle($"New Active Twitch {dropSingularOrPlural} for {gameDisplayName}")
-                    .WithDescription(dropReward.Description)
+        embedBuilder.WithTitle($"New Active Twitch {dropSingularOrPlural} for {drop.GameName}")
+                    .WithDescription(drop.Description)
                     .WithColor(Color.Purple)
                     .WithTimestamp(_timeProvider.GetUtcNow());
     }
 
-    private static void AddDropRewardBaseDetails(EmbedBuilder embedBuilder, GetDropsReward dropReward)
+    private static void AddDropRewardBaseDetails(EmbedBuilder embedBuilder, Drop drop)
     {
-        embedBuilder.AddField("Owner", dropReward.Owner.Name, false)
-                    .AddField("Starts", FormatDateTimeOffset(dropReward.StartsAt), false)
-                    .AddField("Ends", FormatDateTimeOffset(dropReward.EndsAt), false);
+        embedBuilder.AddField("Owner", drop.Owner, false)
+                    .AddField("Starts", FormatDateTimeOffset(drop.StartsAt), false)
+                    .AddField("Ends", FormatDateTimeOffset(drop.EndsAt), false);
     }
 
-    private static void AddDropRewardTimeBasedDrops(EmbedBuilder embedBuilder, List<GetDropsTimeBasedDrop> timeBasedDrops)
+    private static void AddDropRewardTimeBasedDrops(EmbedBuilder embedBuilder, List<TimeBasedDrop> timeBasedDrops)
     {
-        IEnumerable<GetDropsTimeBasedDrop> orderedDrops = timeBasedDrops.OrderBy(drop => drop.StartsAt)
-                                                                        .ThenBy(drop => drop.RequiredMinutesWatched);
-
-        foreach (GetDropsTimeBasedDrop timeBasedDrop in orderedDrops)
+        foreach (TimeBasedDrop timeBasedDrop in timeBasedDrops)
         {
             embedBuilder.AddField("Reward", $"{timeBasedDrop.Name} - Requires {FormatTimeDuration(timeBasedDrop.RequiredMinutesWatched)} watched", true);
         }
     }
 
-    private static void AddDropRewardLinks(EmbedBuilder embedBuilder, GetDropsReward dropReward)
+    private static void AddDropRewardLinks(EmbedBuilder embedBuilder, Drop drop)
     {
-        if (!string.IsNullOrEmpty(dropReward.AccountLinkUrl))
+        if (!string.IsNullOrEmpty(drop.AccountLinkUrl))
         {
-            embedBuilder.AddField("Link Account", dropReward.AccountLinkUrl, false);
+            embedBuilder.AddField("Link Account", drop.AccountLinkUrl, false);
         }
 
-        if (!string.IsNullOrEmpty(dropReward.DetailsUrl))
+        if (!string.IsNullOrEmpty(drop.DetailsUrl))
         {
-            embedBuilder.AddField("More Details", dropReward.DetailsUrl, false);
+            embedBuilder.AddField("More Details", drop.DetailsUrl, false);
         }
     }
 
@@ -89,7 +87,7 @@ public sealed class DiscordEmbedBuilderService
         return $"{dateTimeOffset.UtcDateTime:ddd dd-MMM-yy HH:mm:ss} (GMT+0)";
     }
 
-    private static string FormatTimeDuration(ushort minutes)
+    private static string FormatTimeDuration(short minutes)
     {
         if (minutes < 60)
         {
@@ -99,7 +97,7 @@ public sealed class DiscordEmbedBuilderService
         return $"{ConvertMinutesToHours(minutes)} hours";
     }
 
-    private static double ConvertMinutesToHours(ushort minutes)
+    private static double ConvertMinutesToHours(short minutes)
     {
         return Math.Round(((double)minutes) / 60.0, 2, MidpointRounding.AwayFromZero);
     }

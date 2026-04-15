@@ -1,46 +1,53 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using TwitchDropsDiscordBot.Models;
-using TwitchDropsDiscordBot.Models.SunkwiApi;
-using TwitchDropsDiscordBot.Persistence;
+using Microsoft.Extensions.Options;
+using TwitchDropsDiscordBot.Models.Configuration;
+using TwitchDropsDiscordBot.Models.Entities;
+using TwitchDropsDiscordBot.Services.Interfaces;
 
 namespace TwitchDropsDiscordBot.Services;
 
 public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 {
-    private readonly SettingsFileRepository _settingsFileRepository;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public TwitchDropsCheckerBackgroundService(SettingsFileRepository settingsFileRepository, IServiceScopeFactory serviceScopeFactory)
+    public TwitchDropsCheckerBackgroundService(IServiceScopeFactory serviceScopeFactory)
     {
-        _settingsFileRepository = settingsFileRepository;
         _serviceScopeFactory = serviceScopeFactory;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Ensure all migrations have had sufficient time to complete before starting the job loop:
+        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             TimeSpan? waitDuration = null;
-            TimeSpan fallbackWaitDuration = TimeSpan.FromMinutes(30);
 
             try
             {
-                Settings settings = await _settingsFileRepository.GetSettingsFromFileAsync();
-                waitDuration = TimeSpan.FromMinutes(settings.DelayBetweenChecksInMinutes);
-
                 await using (AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope())
                 {
-                    TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
-                    List<GetDropsResponse> newDrops = await twitchDropFinderService.FindNewDropsAsync(settings.GameNames);
+                    // The types of configuration I am using here could change in appsettings.json between requests.
+                    // I was previously handling this by manually re-loading Settings through a Settings Repository before.
+                    // This has since been switched to IOptionsSnapshot<TOptions> as I didn't previously realise this provides this functionality out of the box.
+                    // This still works, as the "scope" for my config refers to each iteration within the background job loop.
+
+                    BotConfiguration botConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BotConfiguration>>().Value;
+                    waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
+
+                    ITwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<ITwitchDropFinderService>();
+                    List<Drop> newDrops = await twitchDropFinderService.FindNewDropsAsync();
 
                     if (newDrops.Count > 0)
                     {
                         Console.WriteLine("Sending notifications for new drops...");
 
-                        await using (DiscordNotificationService discordNotificationService = scope.ServiceProvider.GetRequiredService<DiscordNotificationService>())
+                        DiscordConfiguration discordConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<DiscordConfiguration>>().Value;
+                        await using (INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>())
                         {
-                            await discordNotificationService.SendTwitchDropNotificationsAsync(settings.DiscordBotToken, settings.DiscordChannelId, newDrops);
+                            await notificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops);
                         }
 
                         Console.WriteLine("Finished sending notifications for new drops.");
@@ -56,13 +63,22 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                 Console.WriteLine($"Error: Exception thrown in BackgroundService: {ex.Message}\n{ex.StackTrace}");
             }
 
-            if (waitDuration is null || waitDuration.Value.TotalMinutes < 1)
-            {
-                Console.WriteLine($"An invalid wait duration was supplied in settings. To avoid infinite loops with high CPU usage, falling back to {fallbackWaitDuration.TotalMinutes} minutes.");
-                waitDuration = fallbackWaitDuration;
-            }
-            Console.WriteLine($"Waiting for {waitDuration.Value.TotalMinutes} minutes before checking for new drops again.");
+            Console.WriteLine($"Waiting for {waitDuration!.Value.TotalMinutes} minutes before checking for new drops again.");
             await Task.Delay(waitDuration.Value, stoppingToken);
         }
+    }
+
+    private static TimeSpan GetWaitDelayDuration(uint delayBetweenChecksInMinutes)
+    {
+        TimeSpan fallbackWaitDuration = TimeSpan.FromMinutes(30);
+        TimeSpan configurationWaitDuration = TimeSpan.FromMinutes(delayBetweenChecksInMinutes);
+
+        if (configurationWaitDuration.TotalMinutes < 1 || configurationWaitDuration.TotalHours > 24)
+        {
+            Console.WriteLine($"An invalid wait duration was supplied in appsettings. Falling back to {fallbackWaitDuration.TotalMinutes} minutes.");
+            return fallbackWaitDuration;
+        }
+
+        return configurationWaitDuration;
     }
 }
