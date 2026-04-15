@@ -7,5 +7,5 @@ public sealed record BotConfiguration
     /// <summary>
     /// The number of minutes to sleep before checking for more drops.
     /// </summary>
-    public uint DelayBetweenChecksInMinutes { get; set; }
+    public uint DelayBetweenChecksInMinutes { get; init; }
 }

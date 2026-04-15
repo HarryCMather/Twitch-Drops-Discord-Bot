@@ -2,9 +2,9 @@
 
 public class Game
 {
-    public short Id { get; set; }
+    public short Id { get; init; }
 
-    public string Name { get; set; }
+    public string Name { get; init; }
 
-    public bool ShouldAlert { get; set; }
+    public bool ShouldAlert { get; init; }
 }

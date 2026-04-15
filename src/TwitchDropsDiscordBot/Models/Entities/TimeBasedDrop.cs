@@ -2,17 +2,17 @@
 
 public class TimeBasedDrop
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-    public Guid ParentDropId { get; set; }
+    public Guid ParentDropId { get; init; }
 
-    public string Name { get; set; }
+    public string Name { get; init; }
 
-    public DateTimeOffset StartsAt { get; set; }
+    public DateTimeOffset StartsAt { get; init; }
 
-    public DateTimeOffset EndsAt { get; set; }
+    public DateTimeOffset EndsAt { get; init; }
 
-    public short RequiredMinutesWatched { get; set; }
+    public short RequiredMinutesWatched { get; init; }
 
     public DateTimeOffset? AlertedOn { get; set; }
 }
