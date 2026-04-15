@@ -37,7 +37,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                     BotConfiguration botConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<BotConfiguration>>().Value;
                     waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
 
-                    TwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<TwitchDropFinderService>();
+                    ITwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<ITwitchDropFinderService>();
                     List<Drop> newDrops = await twitchDropFinderService.FindNewDropsAsync();
 
                     if (newDrops.Count > 0)
