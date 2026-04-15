@@ -33,13 +33,13 @@ public sealed class SunkwiApiClient : ITwitchDropFinderRepository
     {
         List<TimeBasedDrop> timeBasedDrops = ConvertToTimeBasedDrops(inputDrop.TimeBasedDrops, inputDrop.Id);
 
+        // GameId and DropOwnerId columns are both required, but are populated during filtering in TwitchDropsFilterService,
+        // as these need to be populated based off values within the DropOwner and Games tables.
         Drop dropForRequestedGame = new()
         {
             Id = inputDrop.Id,
             GameName = gameName,
-            // GameId = gameId, // TODO: ADD THESE BACK THROUGH THE TWITCHDROPSFILTERSERVICE
             Owner = inputDrop.Owner.Name,
-            // DropOwnerId = dropOwnerId, // TODO: ADD THESE BACK THROUGH THE TWITCHDROPSFILTERSERVICE
             Name = inputDrop.Name,
             Description = inputDrop.Description,
             AccountLinkUrl = inputDrop.AccountLinkUrl,
