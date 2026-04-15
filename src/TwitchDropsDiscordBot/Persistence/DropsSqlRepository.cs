@@ -28,6 +28,9 @@ public class DropsSqlRepository : IDropsRepository
 
     public async Task InsertNewDropsAsync(List<Drop> drops)
     {
+        // I'm opting to use a bulk insert for new drops, but there's a chance some of the drops may already exist.
+        // Here I'm firstly calling to get a list of existing drops and filtering out ones which have already been added.
+        // Then performing the BulkInsert call.
         IEnumerable<Guid> dropIds = drops.Select(drop => drop.Id);
 
         HashSet<Guid> existingIds = await _dbContext.Drops.Where(dbDrop => dropIds.Contains(dbDrop.Id))
