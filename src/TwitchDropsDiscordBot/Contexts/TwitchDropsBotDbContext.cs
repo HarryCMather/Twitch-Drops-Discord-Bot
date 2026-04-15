@@ -96,13 +96,13 @@ public sealed class TwitchDropsBotDbContext : DbContext
         modelBuilder.Entity<Drop>()
                     .HasOne<DropOwner>()
                     .WithMany()
-                    .HasForeignKey("drop_owner_id")
+                    .HasForeignKey(drop => drop.DropOwnerId)
                     .IsRequired();
 
         modelBuilder.Entity<Drop>()
                     .HasOne<Game>()
                     .WithMany()
-                    .HasForeignKey("game_id")
+                    .HasForeignKey(drop => drop.GameId)
                     .IsRequired();
     }
 
@@ -122,7 +122,7 @@ public sealed class TwitchDropsBotDbContext : DbContext
         modelBuilder.Entity<TimeBasedDrop>()
                     .HasOne<Drop>()
                     .WithMany()
-                    .HasForeignKey("parent_drop_id")
+                    .HasForeignKey(timeBasedDrop => timeBasedDrop.ParentDropId)
                     .IsRequired();
     }
 }
