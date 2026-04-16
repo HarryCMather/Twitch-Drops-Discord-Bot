@@ -1,6 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TwitchDropsDiscordBot.Extensions;
 using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Services.Interfaces;
@@ -10,10 +13,15 @@ namespace TwitchDropsDiscordBot.Services;
 public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ILogger<TwitchDropsCheckerBackgroundService> _logger;
 
-    public TwitchDropsCheckerBackgroundService(IServiceScopeFactory serviceScopeFactory)
+    public const string TraceName = $"TwitchDropsChecker.{nameof(CheckForDropsAsync)}";
+    private static readonly ActivitySource ActivitySource = new(TraceName);
+
+    public TwitchDropsCheckerBackgroundService(IServiceScopeFactory serviceScopeFactory, ILogger<TwitchDropsCheckerBackgroundService> logger)
     {
         _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,6 +41,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
     {
         TimeSpan? waitDuration = null;
 
+        Activity activity = ActivitySource.StartTrace(TraceName);
 
         try
         {
