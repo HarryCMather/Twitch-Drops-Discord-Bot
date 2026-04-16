@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NLog;
+using NLog.Web;
 using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Configuration;
 using TwitchDropsDiscordBot.Models.Entities;
@@ -24,6 +26,14 @@ internal static class Program
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
         builder.Logging.ClearProviders();
+        LogManager.Setup().LoadConfigurationFromFile("NLog.config");
+        builder.UseNLog();
+
+        builder.Services.Configure<ServiceProviderOptions>(options =>
+        {
+            options.ValidateScopes = true;
+            options.ValidateOnBuild = true;
+        });
 
         builder.Services.Configure<DiscordConfiguration>(builder.Configuration.GetRequiredSection(DiscordConfiguration.SectionKey))
                         .Configure<BotConfiguration>(builder.Configuration.GetRequiredSection(BotConfiguration.SectionKey));
@@ -53,6 +63,8 @@ internal static class Program
         await SeedGameNamesAsync(host.Services);
         await LogStartupCompleteAsync(builder.Environment.IsDevelopment(), host.Services);
         await host.RunAsync();
+
+        LogManager.Shutdown();
     }
 
     private static void SetGcSettings()
