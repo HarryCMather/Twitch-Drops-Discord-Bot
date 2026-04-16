@@ -11,7 +11,7 @@ namespace TwitchDropsDiscordBot.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddCustomOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCustomOpenTelemetry(this IServiceCollection services, IConfiguration configuration, string hostname)
     {
         OpenTelemetryConfiguration openTelemetryConfiguration = configuration.GetRequiredSection(OpenTelemetryConfiguration.SectionKey)
                                                                              .Get<OpenTelemetryConfiguration>();
@@ -22,8 +22,6 @@ public static class ServiceCollectionExtensions
             Console.WriteLine("Open Telemetry is disabled...");
             return services;
         }
-
-        string hostname = Environment.MachineName;
 
         // Opting to not add Metrics here, as I'm mainly interested in traces and logs at this stage.
         // This can be added here in-future, if required.
