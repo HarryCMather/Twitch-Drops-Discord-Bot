@@ -37,7 +37,7 @@ internal static class Program
                                                                                                    .UseSnakeCaseNamingConvention());
 
         builder.Services.AddScoped<ITwitchDropFinderRepository, SunkwiApiClient>()
-                        .AddScoped<DiscordBotClient>()
+                        .AddScoped<IDiscordBotClient, DiscordBotClient>()
                         .AddScoped<IGamesRepository, GamesSqlRepository>()
                         .AddScoped<IDropOwnerRepository, DropOwnerSqlRepository>()
                         .AddScoped<IDropsRepository, DropsSqlRepository>()

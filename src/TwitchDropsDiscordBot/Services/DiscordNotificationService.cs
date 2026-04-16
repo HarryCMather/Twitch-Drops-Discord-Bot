@@ -1,7 +1,6 @@
 ﻿using System.Runtime;
 using Discord;
 using TwitchDropsDiscordBot.Models.Entities;
-using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services.Interfaces;
 
@@ -11,10 +10,13 @@ public sealed class DiscordNotificationService : INotificationService
 {
     private readonly IEmbedBuilderService _embedBuilderService;
     private readonly IDropsRepository _dropsRepository;
-    private readonly DiscordBotClient _discordBotClient;
+    private readonly IDiscordBotClient _discordBotClient;
     private readonly TimeProvider _timeProvider;
 
-    public DiscordNotificationService(IEmbedBuilderService embedBuilderService, IDropsRepository dropsRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
+    public DiscordNotificationService(IEmbedBuilderService embedBuilderService,
+                                      IDropsRepository dropsRepository,
+                                      IDiscordBotClient discordBotClient,
+                                      TimeProvider timeProvider)
     {
         _embedBuilderService = embedBuilderService;
         _dropsRepository = dropsRepository;

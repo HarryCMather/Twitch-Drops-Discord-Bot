@@ -1,9 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using TwitchDropsDiscordBot.Persistence.Interfaces;
 
 namespace TwitchDropsDiscordBot.Persistence;
 
-public sealed class DiscordBotClient : IAsyncDisposable
+public sealed class DiscordBotClient : IDiscordBotClient
 {
     private DiscordSocketClient _discordSocketClient;
     private SocketTextChannel _textChannel;
