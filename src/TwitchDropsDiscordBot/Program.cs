@@ -29,6 +29,12 @@ internal static class Program
         LogManager.Setup().LoadConfigurationFromFile("NLog.config");
         builder.UseNLog();
 
+        builder.Services.Configure<ServiceProviderOptions>(options =>
+        {
+            options.ValidateScopes = true;
+            options.ValidateOnBuild = true;
+        });
+
         builder.Services.Configure<DiscordConfiguration>(builder.Configuration.GetRequiredSection(DiscordConfiguration.SectionKey))
                         .Configure<BotConfiguration>(builder.Configuration.GetRequiredSection(BotConfiguration.SectionKey));
 
