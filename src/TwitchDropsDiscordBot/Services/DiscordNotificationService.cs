@@ -45,9 +45,20 @@ public sealed class DiscordNotificationService : INotificationService
 
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
+            // I should wait between sending Discord notifications, but this is only necessary if there's more than 1 notification to send,
+            // as this ensures we stay below Discord's rate limits and ensure we don't spam them.
+            // If there's only 1 notification to send, the app is realistically going to be waiting minutes before checking/trying again,
+            // and this shouldn't be called that often.
+            bool shouldWaitBetweenNotifications = drops.Count > 0;
+
             foreach (Drop drop in drops)
             {
                 await SendTwitchDropRewardNotificationAsync(drop);
+
+                if (shouldWaitBetweenNotifications)
+                {
+                    await WaitBetweenSendingDropNotificationsAsync();
+                }
             }
 
             IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
@@ -68,9 +79,6 @@ public sealed class DiscordNotificationService : INotificationService
             {
                 timeBasedDrop.AlertedOn = utcTimeStamp;
             }
-
-            // Avoid spamming Discord and ensure we don't get close to their rate limits:
-            await WaitBetweenSendingDropNotificationsAsync();
         }
     }
 
@@ -86,5 +94,4 @@ public sealed class DiscordNotificationService : INotificationService
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
     }
-
 }
