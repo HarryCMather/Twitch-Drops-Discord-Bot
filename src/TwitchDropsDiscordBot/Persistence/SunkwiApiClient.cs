@@ -35,29 +35,26 @@ public sealed class SunkwiApiClient : ITwitchDropFinderRepository
 
     private static Drop ConvertToDrop(GetDropsReward inputDrop, string gameName)
     {
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        List<TimeBasedDrop> timeBasedDrops = ConvertToTimeBasedDrops(inputDrop.TimeBasedDrops, inputDrop.Id);
+
+        // GameId and DropOwnerId columns are both required, but are populated during filtering in TwitchDropsFilterService,
+        // as these need to be populated based off values within the DropOwner and Games tables.
+        Drop dropForRequestedGame = new()
         {
-            List<TimeBasedDrop> timeBasedDrops = ConvertToTimeBasedDrops(inputDrop.TimeBasedDrops, inputDrop.Id);
+            Id = inputDrop.Id,
+            GameName = gameName,
+            Owner = inputDrop.Owner.Name,
+            Name = inputDrop.Name,
+            Description = inputDrop.Description,
+            AccountLinkUrl = inputDrop.AccountLinkUrl,
+            DetailsUrl = inputDrop.DetailsUrl,
+            StartsAt = inputDrop.StartsAt,
+            EndsAt = inputDrop.EndsAt,
+            Status = inputDrop.Status,
+            TimeBasedDrops = timeBasedDrops
+        };
 
-            // GameId and DropOwnerId columns are both required, but are populated during filtering in TwitchDropsFilterService,
-            // as these need to be populated based off values within the DropOwner and Games tables.
-            Drop dropForRequestedGame = new()
-            {
-                Id = inputDrop.Id,
-                GameName = gameName,
-                Owner = inputDrop.Owner.Name,
-                Name = inputDrop.Name,
-                Description = inputDrop.Description,
-                AccountLinkUrl = inputDrop.AccountLinkUrl,
-                DetailsUrl = inputDrop.DetailsUrl,
-                StartsAt = inputDrop.StartsAt,
-                EndsAt = inputDrop.EndsAt,
-                Status = inputDrop.Status,
-                TimeBasedDrops = timeBasedDrops
-            };
-
-            return dropForRequestedGame;
-        }
+        return dropForRequestedGame;
     }
 
     private static List<TimeBasedDrop> ConvertToTimeBasedDrops(List<GetDropsTimeBasedDrop> inputDrops, Guid parentDropId)
