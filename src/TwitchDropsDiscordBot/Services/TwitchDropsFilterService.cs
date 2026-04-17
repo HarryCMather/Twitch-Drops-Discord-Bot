@@ -1,4 +1,5 @@
 ﻿using TwitchDropsDiscordBot.Models;
+using Microsoft.Extensions.Logging;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services.Interfaces;
@@ -10,14 +11,17 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
     private readonly TimeProvider _timeProvider;
     private readonly IDropOwnerRepository _dropOwnerRepository;
     private readonly IDropsRepository _dropsRepository;
+    private readonly ILogger<TwitchDropsFilterService> _logger;
 
     public TwitchDropsFilterService(TimeProvider timeProvider,
                                     IDropOwnerRepository dropOwnerRepository,
-                                    IDropsRepository dropsRepository)
+                                    IDropsRepository dropsRepository,
+                                    ILogger<TwitchDropsFilterService> logger)
     {
         _timeProvider = timeProvider;
         _dropOwnerRepository = dropOwnerRepository;
         _dropsRepository = dropsRepository;
+        _logger = logger;
     }
 
     public async Task<DropsFilterResult> FilterDropsAsync(IEnumerable<Drop> foundDrops,
@@ -69,6 +73,7 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
                     drop.DropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(drop.Owner, existingDropOwners);
                     drop.GameId = gamesMap[drop.GameName];
                     dropsFilterResult.ValidDrops.Add(drop);
+                        _logger.LogInformation("Found drop for game '{GameName}'", drop.GameName);
                 }
             }
         }

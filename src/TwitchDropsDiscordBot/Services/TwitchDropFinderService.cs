@@ -1,4 +1,5 @@
 ﻿using TwitchDropsDiscordBot.Models;
+using Microsoft.Extensions.Logging;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services.Interfaces;
@@ -11,16 +12,19 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
     private readonly ITwitchDropFinderRepository _twitchDropsFinderRepository;
     private readonly IGamesRepository _gamesRepository;
     private readonly IDropOwnerRepository _dropOwnerRepository;
+    private readonly ILogger<TwitchDropFinderService> _logger;
 
     public TwitchDropFinderService(ITwitchDropsFilterService twitchDropsFilterService,
                                    ITwitchDropFinderRepository twitchDropsFinderRepository,
                                    IGamesRepository gamesRepository,
-                                   IDropOwnerRepository dropOwnerRepository)
+                                   IDropOwnerRepository dropOwnerRepository,
+                                   ILogger<TwitchDropFinderService> logger)
     {
         _twitchDropsFilterService = twitchDropsFilterService;
         _twitchDropsFinderRepository = twitchDropsFinderRepository;
         _gamesRepository = gamesRepository;
         _dropOwnerRepository = dropOwnerRepository;
+        _logger = logger;
     }
 
     public async Task<List<Drop>> FindNewDropsAsync()
@@ -30,7 +34,7 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
         List<Game> games = await _gamesRepository.GetGamesAsync();
         if (!games.Exists(game => game.ShouldAlert))
         {
-            Console.WriteLine("No alertable games were set in the database. Skipping this iteration.");
+            _logger.LogWarning("No alertable games were set in the database. Skipping this iteration");
             return dropsForRequestedGames;
         }
 
@@ -38,17 +42,17 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
 
         try
         {
-            Console.WriteLine("Checking for new Twitch drops...");
+            _logger.LogInformation("Checking for new Twitch drops...");
             IEnumerable<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync();
             dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners);
         }
-        catch (HttpRequestException exception)
+        catch (HttpRequestException ex)
         {
-            Console.WriteLine($"HttpRequestException: {exception.StatusCode} - {exception.HttpRequestError} - {exception.Message}");
+            _logger.LogError(ex, "Failed to find new drops.  Faulted with a HTTP Request Exception: {StatusCode} - {Message}", ex.StatusCode, ex.Message);
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Exception: {exception.Message}");
+            _logger.LogError(ex, "Failed to find new drops.  Faulted with an unknown error: {Message}", ex.Message);
         }
 
         return dropsForRequestedGames;

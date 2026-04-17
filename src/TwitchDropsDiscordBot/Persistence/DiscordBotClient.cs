@@ -6,9 +6,16 @@ namespace TwitchDropsDiscordBot.Persistence;
 
 public sealed class DiscordBotClient : IDiscordBotClient
 {
+    private readonly ILogger<DiscordBotClient> _logger;
+
     private DiscordSocketClient _discordSocketClient;
     private SocketTextChannel _textChannel;
     private TaskCompletionSource<bool> _waitForReadyTaskCompletionSource;
+
+    public DiscordBotClient(ILogger<DiscordBotClient> logger)
+    {
+        _logger = logger;
+    }
 
     public bool IsInitialized { get; private set; }
 
@@ -50,7 +57,7 @@ public sealed class DiscordBotClient : IDiscordBotClient
 
     private Task OnLog(LogMessage logMessage)
     {
-        Console.WriteLine(logMessage.ToString());
+        _logger.LogInformation("DiscordBotClient-OnLog: {Message}", logMessage.ToString());
         return Task.CompletedTask;
     }
 
