@@ -32,7 +32,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             TimeSpan waitDuration = await CheckForDropsAsync();
-            Console.WriteLine($"Waiting for {waitDuration.TotalMinutes} minutes before checking for new drops again.");
+            _logger.LogInformation("Waiting for {WaitDurationMinutes} minutes before checking for new drops again", waitDuration.TotalMinutes);
             await Task.Delay(waitDuration, stoppingToken);
         }
     }
@@ -60,7 +60,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 
                 if (newDrops.Count > 0)
                 {
-                    Console.WriteLine("Sending notifications for new drops...");
+                    _logger.LogInformation("Sending notifications for new drops");
 
                     DiscordConfiguration discordConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<DiscordConfiguration>>().Value;
                     await using (INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>())
@@ -68,30 +68,36 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                         await notificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops);
                     }
 
-                    Console.WriteLine("Finished sending notifications for new drops.");
+                    _logger.LogInformation("Finished sending notifications for new drops");
                 }
                 else
                 {
-                    Console.WriteLine("No new drops found...");
+                    _logger.LogInformation("No new drops found");
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: Exception thrown in BackgroundService: {ex.Message}\n{ex.StackTrace}");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            activity?.AddException(ex);
+            _logger.LogError(ex, "Error: Exception thrown in BackgroundService: {ErrorMessage}", ex.Message);
+        }
+        finally
+        {
+            activity?.Dispose();
         }
 
         return waitDuration!.Value;
     }
 
-    private static TimeSpan GetWaitDelayDuration(uint delayBetweenChecksInMinutes)
+    private TimeSpan GetWaitDelayDuration(uint delayBetweenChecksInMinutes)
     {
         TimeSpan fallbackWaitDuration = TimeSpan.FromMinutes(30);
         TimeSpan configurationWaitDuration = TimeSpan.FromMinutes(delayBetweenChecksInMinutes);
 
         if (configurationWaitDuration.TotalMinutes < 1 || configurationWaitDuration.TotalHours > 24)
         {
-            Console.WriteLine($"An invalid wait duration was supplied in appsettings. Falling back to {fallbackWaitDuration.TotalMinutes} minutes.");
+            _logger.LogError("An invalid wait duration was supplied in appsettings. Falling back to {FallbackWaitDurationMinutes} minutes", fallbackWaitDuration.TotalMinutes);
             return fallbackWaitDuration;
         }
 
