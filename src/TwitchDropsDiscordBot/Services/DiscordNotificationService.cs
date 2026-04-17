@@ -1,4 +1,5 @@
-﻿using System.Runtime;
+﻿using System.Diagnostics;
+using System.Runtime;
 using Discord;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
@@ -42,33 +43,48 @@ public sealed class DiscordNotificationService : INotificationService
             await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
         }
 
-        foreach (Drop drop in drops)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            await SendTwitchDropRewardNotificationAsync(drop);
-        }
+            foreach (Drop drop in drops)
+            {
+                await SendTwitchDropRewardNotificationAsync(drop);
+            }
 
-        IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
-        await _dropsRepository.InsertNewDropsAsync(drops);
-        await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
+            IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
+            await _dropsRepository.InsertNewDropsAsync(drops);
+            await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
+        }
     }
 
     private async Task SendTwitchDropRewardNotificationAsync(Drop drop)
     {
-        Embed embed = _embedBuilderService.BuildEmbedForTwitchDropReward(drop);
-        await _discordBotClient.SendMessageAsync(embed);
-
-        DateTimeOffset utcTimeStamp = _timeProvider.GetUtcNow();
-        foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            timeBasedDrop.AlertedOn = utcTimeStamp;
-        }
+            Embed embed = _embedBuilderService.BuildEmbedForTwitchDropReward(drop);
+            await _discordBotClient.SendMessageAsync(embed);
 
-        // Avoid spamming Discord and ensure we don't get close to their rate limits:
-        await Task.Delay(TimeSpan.FromSeconds(1));
+            DateTimeOffset utcTimeStamp = _timeProvider.GetUtcNow();
+            foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
+            {
+                timeBasedDrop.AlertedOn = utcTimeStamp;
+            }
+
+            // Avoid spamming Discord and ensure we don't get close to their rate limits:
+            await WaitBetweenSendingDropNotificationsAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         await _discordBotClient.DisposeAsync();
     }
+
+    private static async Task WaitBetweenSendingDropNotificationsAsync()
+    {
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+    }
+
 }

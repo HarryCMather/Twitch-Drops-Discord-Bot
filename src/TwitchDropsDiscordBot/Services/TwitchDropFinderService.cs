@@ -1,5 +1,6 @@
-﻿using TwitchDropsDiscordBot.Models;
+﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services.Interfaces;
@@ -60,17 +61,20 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
 
     private async Task<List<Drop>> ExtractDropsForRequestedGames(IEnumerable<Drop> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
     {
-        HashSet<string> existingGameNames = new(games.Select(game => game.Name));
-
-        List<Game> alertableGames = games.Where(game => game.ShouldAlert).ToList();
-        Dictionary<string, short> gamesMap = alertableGames.ToDictionary(game => game.Name, game => game.Id);
-
-        DropsFilterResult dropsFilterResult = await _twitchDropsFilterService.FilterDropsAsync(drops, existingGameNames, alertableGames, gamesMap, dropOwnersMap);
-        if (dropsFilterResult.NewGames.Count > 0)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            await _gamesRepository.InsertGamesAsync(dropsFilterResult.NewGames);
-        }
+            HashSet<string> existingGameNames = new(games.Select(game => game.Name));
 
-        return dropsFilterResult.ValidDrops;
+            List<Game> alertableGames = games.Where(game => game.ShouldAlert).ToList();
+            Dictionary<string, short> gamesMap = alertableGames.ToDictionary(game => game.Name, game => game.Id);
+
+            DropsFilterResult dropsFilterResult = await _twitchDropsFilterService.FilterDropsAsync(drops, existingGameNames, alertableGames, gamesMap, dropOwnersMap);
+            if (dropsFilterResult.NewGames.Count > 0)
+            {
+                await _gamesRepository.InsertGamesAsync(dropsFilterResult.NewGames);
+            }
+
+            return dropsFilterResult.ValidDrops;
+        }
     }
 }

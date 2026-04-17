@@ -1,5 +1,7 @@
-﻿using Discord;
+﻿using System.Diagnostics;
+using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 
 namespace TwitchDropsDiscordBot.Persistence;
@@ -38,7 +40,10 @@ public sealed class DiscordBotClient : IDiscordBotClient
 
     public async Task SendMessageAsync(Embed embed)
     {
-        await _textChannel.SendMessageAsync(embed: embed);
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            await _textChannel.SendMessageAsync(embed: embed);
+        }
     }
 
     public async ValueTask DisposeAsync()

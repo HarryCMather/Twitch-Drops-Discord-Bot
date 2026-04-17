@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Entities;
@@ -17,18 +18,24 @@ public sealed class DropOwnerSqlRepository : IDropOwnerRepository
 
     public async Task<Dictionary<string, short>> GetDropOwnersMapAsync()
     {
-        return await _dbContext.DropOwners.ToDictionaryAsync(dropOwner => dropOwner.Name,
-                                                                          dropOwner => dropOwner.Id);
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            return await _dbContext.DropOwners.ToDictionaryAsync(dropOwner => dropOwner.Name,
+                                                                              dropOwner => dropOwner.Id);
+        }
     }
 
     public async Task<short> InsertDropOwnerAsync(string dropOwnerName)
     {
-        EntityEntry<DropOwner> insertedEntity = await _dbContext.DropOwners.AddAsync(new DropOwner
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            Name = dropOwnerName
-        });
+            EntityEntry<DropOwner> insertedEntity = await _dbContext.DropOwners.AddAsync(new DropOwner
+            {
+                Name = dropOwnerName
+            });
 
-        await _dbContext.SaveChangesAsync();
-        return insertedEntity.Entity.Id;
+            await _dbContext.SaveChangesAsync();
+            return insertedEntity.Entity.Id;
+        }
     }
 }

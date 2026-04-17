@@ -1,5 +1,6 @@
-﻿using TwitchDropsDiscordBot.Models;
+﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using TwitchDropsDiscordBot.Models;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services.Interfaces;
@@ -30,61 +31,63 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
                                                           Dictionary<string, short> gamesMap,
                                                           Dictionary<string, short> existingDropOwners)
     {
-        DropsFilterResult dropsFilterResult = new()
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            ValidDrops = [],
-            NewGames = []
-        };
-
-        HashSet<string> requestedGameNamesSet = new(alertableGames.Select(game => game.Name));
-
-        // Whilst this isn't necessary for extracting the drops themselves, it is meaningful to track this in the
-        // database in-case Twitch/Game authors change the names (like with Siege vs Siege X within the past year):
-        HashSet<string> foundGameNames = [];
-
-        DateTimeOffset currentUtcDateTime = _timeProvider.GetUtcNow();
-
-        foreach (Drop drop in foundDrops)
-        {
-            // Don't need to perform a contains check against foundGameNames, as Add will only Add if the element isn't already present:
-            if (!existingGameNames.Contains(drop.GameName))
+            DropsFilterResult dropsFilterResult = new()
             {
-                foundGameNames.Add(drop.GameName);
-            }
+                ValidDrops = [],
+                NewGames = []
+            };
 
-            // Like with the parent drops which will be checked next, the time-based drops should also be active (by comparing DateTimes):
-            drop.TimeBasedDrops = drop.TimeBasedDrops.Where(timeBasedDrop => IsBetweenDateTimes(currentUtcDateTime, timeBasedDrop.StartsAt, timeBasedDrop.EndsAt))
-                                                     .ToList();
+            HashSet<string> requestedGameNamesSet = new(alertableGames.Select(game => game.Name));
 
-            // The game for the current drop should be a game with should_alert true in the db,
-            // and the drop must be active (started and not ended by time, as well as ACTIVE status):
-            if (IsGameValid(drop.GameName, requestedGameNamesSet) &&
-                IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt) &&
-                IsActiveStatus(drop.Status) &&
-                HasTimeBasedRewards(drop.TimeBasedDrops))
+            // Whilst this isn't necessary for extracting the drops themselves, it is meaningful to track this in the
+            // database in-case Twitch/Game authors change the names (like with Siege vs Siege X within the past year):
+            HashSet<string> foundGameNames = [];
+
+            DateTimeOffset currentUtcDateTime = _timeProvider.GetUtcNow();
+
+            foreach (Drop drop in foundDrops)
             {
-                // Performing this check separately as this call will be more expensive, and is realistically unlikely to return any data most of the time:
-                // This should be refactored in-future:
-                drop.TimeBasedDrops = await GetUnalertedTimeBasedDropsAsync(drop);
-                if (drop.TimeBasedDrops.Count > 0)
+                // Don't need to perform a contains check against foundGameNames, as Add will only Add if the element isn't already present:
+                if (!existingGameNames.Contains(drop.GameName))
                 {
-                    Console.WriteLine($"Found drop for game '{drop.GameName}'");
+                    foundGameNames.Add(drop.GameName);
+                }
 
-                    drop.DropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(drop.Owner, existingDropOwners);
-                    drop.GameId = gamesMap[drop.GameName];
-                    dropsFilterResult.ValidDrops.Add(drop);
+                // Like with the parent drops which will be checked next, the time-based drops should also be active (by comparing DateTimes):
+                drop.TimeBasedDrops = drop.TimeBasedDrops.Where(timeBasedDrop => IsBetweenDateTimes(currentUtcDateTime, timeBasedDrop.StartsAt, timeBasedDrop.EndsAt))
+                                                         .ToList();
+
+                // The game for the current drop should be a game with should_alert true in the db,
+                // and the drop must be active (started and not ended by time, as well as ACTIVE status):
+                if (IsGameValid(drop.GameName, requestedGameNamesSet) &&
+                    IsBetweenDateTimes(currentUtcDateTime, drop.StartsAt, drop.EndsAt) &&
+                    IsActiveStatus(drop.Status) &&
+                    HasTimeBasedRewards(drop.TimeBasedDrops))
+                {
+                    // Performing this check separately as this call will be more expensive, and is realistically unlikely to return any data most of the time:
+                    // This should be refactored in-future:
+                    drop.TimeBasedDrops = await GetUnalertedTimeBasedDropsAsync(drop);
+                    if (drop.TimeBasedDrops.Count > 0)
+                    {
                         _logger.LogInformation("Found drop for game '{GameName}'", drop.GameName);
+
+                        drop.DropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(drop.Owner, existingDropOwners);
+                        drop.GameId = gamesMap[drop.GameName];
+                        dropsFilterResult.ValidDrops.Add(drop);
+                    }
                 }
             }
+
+            dropsFilterResult.NewGames.AddRange(foundGameNames.Select(gameName => new Game
+            {
+                Name = gameName,
+                ShouldAlert = false
+            }));
+
+            return dropsFilterResult;
         }
-
-        dropsFilterResult.NewGames.AddRange(foundGameNames.Select(gameName => new Game
-        {
-            Name = gameName,
-            ShouldAlert = false
-        }));
-
-        return dropsFilterResult;
     }
 
     private async ValueTask<short> GetDropOwnerIdFromDropOwnerNameAsync(string dropOwnerName, Dictionary<string, short> existingDropOwners)
@@ -94,13 +97,16 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
         // This is because the Drop Owner is usually the Game Publisher, which won't change.
         // This also helps ensure this doesn't become an N+1 problem.
 
-        if (!existingDropOwners.TryGetValue(dropOwnerName, out short dropOwnerId))
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            dropOwnerId = await _dropOwnerRepository.InsertDropOwnerAsync(dropOwnerName);
-            existingDropOwners.Add(dropOwnerName, dropOwnerId);
-        }
+            if (!existingDropOwners.TryGetValue(dropOwnerName, out short dropOwnerId))
+            {
+                dropOwnerId = await _dropOwnerRepository.InsertDropOwnerAsync(dropOwnerName);
+                existingDropOwners.Add(dropOwnerName, dropOwnerId);
+            }
 
-        return dropOwnerId;
+            return dropOwnerId;
+        }
     }
 
     private static bool IsGameValid(string gameName, HashSet<string> validGames)
@@ -129,16 +135,19 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
         // The main aim here is to avoid processing drops that we've already alerted on.
         // TODO: REFACTOR THIS IN-FUTURE TO AVOID N+1 QUERY LOOPING.  THIS SHOULDN'T BE TOO MUCH OF AN ISSUE HERE, AS MOST DROPS HAVE ALREADY BEEN FILTERED OUT BY THIS STAGE.
 
-        List<TimeBasedDrop> unalertedDrops = [];
-        foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            bool alreadyAlerted = await _dropsRepository.HasDropNotificationBeenSentAsync(drop.Id, timeBasedDrop.Id);
-            if (!alreadyAlerted)
+            List<TimeBasedDrop> unalertedDrops = [];
+            foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
             {
-                unalertedDrops.Add(timeBasedDrop);
+                bool alreadyAlerted = await _dropsRepository.HasDropNotificationBeenSentAsync(drop.Id, timeBasedDrop.Id);
+                if (!alreadyAlerted)
+                {
+                    unalertedDrops.Add(timeBasedDrop);
+                }
             }
-        }
 
-        return unalertedDrops;
+            return unalertedDrops;
+        }
     }
 }
