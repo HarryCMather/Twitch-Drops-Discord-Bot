@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Diagnostics;
+using System.Net.Http.Json;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Models.SunkwiApi;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
@@ -14,19 +15,22 @@ public sealed class SunkwiApiClient : ITwitchDropFinderRepository
         _httpClient = httpClient;
     }
 
-    public async Task<IEnumerable<Drop>> GetDropsAsync()
+    public async Task<List<Drop>> GetDropsAsync(CancellationToken cancellationToken)
     {
         const string requestUrl = "https://twitch-drops-api.sunkwi.com/drops";
 
-        IAsyncEnumerable<GetDropsResponse> getDropsResponse = _httpClient.GetFromJsonAsAsyncEnumerable<GetDropsResponse>(requestUrl);
-
-        List<Drop> drops = [];
-        await foreach (GetDropsResponse apiDrop in getDropsResponse)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            IEnumerable<Drop> convertedDrops = apiDrop.Rewards.Select(dropReward => ConvertToDrop(dropReward, apiDrop.GameDisplayName));
-            drops.AddRange(convertedDrops);
+            IAsyncEnumerable<GetDropsResponse> getDropsResponse = _httpClient.GetFromJsonAsAsyncEnumerable<GetDropsResponse>(requestUrl, cancellationToken);
+
+            List<Drop> drops = [];
+            await foreach (GetDropsResponse apiDrop in getDropsResponse)
+            {
+                IEnumerable<Drop> convertedDrops = apiDrop.Rewards.Select(dropReward => ConvertToDrop(dropReward, apiDrop.GameDisplayName));
+                drops.AddRange(convertedDrops);
+            }
+            return drops;
         }
-        return drops;
     }
 
     private static Drop ConvertToDrop(GetDropsReward inputDrop, string gameName)

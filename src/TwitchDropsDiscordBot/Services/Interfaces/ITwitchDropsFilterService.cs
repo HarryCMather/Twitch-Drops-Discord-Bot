@@ -9,5 +9,6 @@ public interface ITwitchDropsFilterService
                                              HashSet<string> existingGameNames,
                                              List<Game> alertableGames,
                                              Dictionary<string, short> gamesMap,
-                                             Dictionary<string, short> existingDropOwners);
+                                             Dictionary<string, short> existingDropOwners,
+                                             CancellationToken cancellationToken);
 }

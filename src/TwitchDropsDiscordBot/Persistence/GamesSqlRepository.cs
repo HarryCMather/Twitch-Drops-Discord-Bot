@@ -1,4 +1,5 @@
-﻿using EFCore.BulkExtensions;
+﻿using System.Diagnostics;
+using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Entities;
@@ -15,21 +16,30 @@ public sealed class GamesSqlRepository : IGamesRepository
         _dbContext = dbContext;
     }
 
-    public async Task<List<Game>> GetGamesAsync()
+    public async Task<List<Game>> GetGamesAsync(CancellationToken cancellationToken)
     {
-        IQueryable<Game> query = _dbContext.Games;
-        return await query.ToListAsync();
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            IQueryable<Game> query = _dbContext.Games;
+            return await query.ToListAsync(cancellationToken);
+        }
     }
 
-    public async Task<IEnumerable<string>> GetExistingMatchingGamesAsync(List<string> gameNames)
+    public async Task<IEnumerable<string>> GetExistingMatchingGamesAsync(List<string> gameNames, CancellationToken cancellationToken)
     {
-        IQueryable<string> query = _dbContext.Games.Where(dbGame => gameNames.Contains(dbGame.Name))
-                                                   .Select(game => game.Name);
-        return await query.ToListAsync();
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            IQueryable<string> query = _dbContext.Games.Where(dbGame => gameNames.Contains(dbGame.Name))
+                                                       .Select(game => game.Name);
+            return await query.ToListAsync(cancellationToken);
+        }
     }
 
-    public async Task InsertGamesAsync(IEnumerable<Game> games)
+    public async Task InsertGamesAsync(IEnumerable<Game> games, CancellationToken cancellationToken)
     {
-        await _dbContext.BulkInsertAsync(games);
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            await _dbContext.BulkInsertAsync(games, cancellationToken: cancellationToken);
+        }
     }
 }

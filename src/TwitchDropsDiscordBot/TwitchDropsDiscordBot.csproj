@@ -17,6 +17,9 @@
       <None Update="appsettings.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="NLog.config">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -29,7 +32,17 @@
       </PackageReference>
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.6" />
       <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.6" />
+      <PackageReference Include="NLog.Targets.OpenTelemetryProtocol" Version="1.2.6" />
+      <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.2" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+      <PackageReference Include="Npgsql.OpenTelemetry" Version="10.0.2" />
+      <PackageReference Include="OpenTelemetry" Version="1.15.2" />
+      <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.2" />
+      <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.15.0-beta.1" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
       <PackageReference Include="SonarAnalyzer.CSharp" Version="10.23.0.137933">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

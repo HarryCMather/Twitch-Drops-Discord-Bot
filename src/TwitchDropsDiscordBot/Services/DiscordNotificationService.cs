@@ -1,7 +1,7 @@
-﻿using System.Runtime;
+﻿using System.Diagnostics;
+using System.Runtime;
 using Discord;
 using TwitchDropsDiscordBot.Models.Entities;
-using TwitchDropsDiscordBot.Persistence;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
 using TwitchDropsDiscordBot.Services.Interfaces;
 
@@ -11,10 +11,13 @@ public sealed class DiscordNotificationService : INotificationService
 {
     private readonly IEmbedBuilderService _embedBuilderService;
     private readonly IDropsRepository _dropsRepository;
-    private readonly DiscordBotClient _discordBotClient;
+    private readonly IDiscordBotClient _discordBotClient;
     private readonly TimeProvider _timeProvider;
 
-    public DiscordNotificationService(IEmbedBuilderService embedBuilderService, IDropsRepository dropsRepository, DiscordBotClient discordBotClient, TimeProvider timeProvider)
+    public DiscordNotificationService(IEmbedBuilderService embedBuilderService,
+                                      IDropsRepository dropsRepository,
+                                      IDiscordBotClient discordBotClient,
+                                      TimeProvider timeProvider)
     {
         _embedBuilderService = embedBuilderService;
         _dropsRepository = dropsRepository;
@@ -33,40 +36,65 @@ public sealed class DiscordNotificationService : INotificationService
         await _discordBotClient.SendMessageAsync(embed);
     }
 
-    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<Drop> drops)
+    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<Drop> drops, CancellationToken cancellationToken)
     {
-        if (!_discordBotClient.IsInitialized)
-        {
-            await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
-        }
+        ArgumentNullException.ThrowIfNull(drops);
 
-        foreach (Drop drop in drops)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            await SendTwitchDropRewardNotificationAsync(drop);
-        }
+            if (!_discordBotClient.IsInitialized)
+            {
+                await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
+            }
 
-        IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
-        await _dropsRepository.InsertNewDropsAsync(drops);
-        await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
+            // I should wait between sending Discord notifications, but this is only necessary if there's more than 1 notification to send,
+            // as this ensures we stay below Discord's rate limits and ensure we don't spam them.
+            // If there's only 1 notification to send, the app is realistically going to be waiting minutes before checking/trying again,
+            // and this shouldn't be called that often.
+            bool shouldWaitBetweenNotifications = drops.Count > 1;
+
+            foreach (Drop drop in drops)
+            {
+                await SendTwitchDropRewardNotificationAsync(drop);
+
+                if (shouldWaitBetweenNotifications)
+                {
+                    await WaitBetweenSendingDropNotificationsAsync(cancellationToken);
+                }
+            }
+
+            IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
+            await _dropsRepository.InsertNewDropsAsync(drops, cancellationToken);
+            await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops, cancellationToken);
+        }
     }
 
     private async Task SendTwitchDropRewardNotificationAsync(Drop drop)
     {
-        Embed embed = _embedBuilderService.BuildEmbedForTwitchDropReward(drop);
-        await _discordBotClient.SendMessageAsync(embed);
-
-        DateTimeOffset utcTimeStamp = _timeProvider.GetUtcNow();
-        foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            timeBasedDrop.AlertedOn = utcTimeStamp;
-        }
+            Embed embed = _embedBuilderService.BuildEmbedForTwitchDropReward(drop);
+            await _discordBotClient.SendMessageAsync(embed);
 
-        // Avoid spamming Discord and ensure we don't get close to their rate limits:
-        await Task.Delay(TimeSpan.FromSeconds(1));
+            DateTimeOffset utcTimeStamp = _timeProvider.GetUtcNow();
+            foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
+            {
+                timeBasedDrop.AlertedOn = utcTimeStamp;
+            }
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         await _discordBotClient.DisposeAsync();
+    }
+
+    private static async Task WaitBetweenSendingDropNotificationsAsync(CancellationToken cancellationToken)
+    {
+        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        {
+            TimeSpan delayDuration = TimeSpan.FromSeconds(1);
+            await Task.Delay(delayDuration, cancellationToken);
+        }
     }
 }

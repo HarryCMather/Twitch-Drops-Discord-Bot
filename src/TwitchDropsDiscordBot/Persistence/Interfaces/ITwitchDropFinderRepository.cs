@@ -4,5 +4,5 @@ namespace TwitchDropsDiscordBot.Persistence.Interfaces;
 
 public interface ITwitchDropFinderRepository
 {
-    Task<IEnumerable<Drop>> GetDropsAsync();
+    Task<List<Drop>> GetDropsAsync(CancellationToken cancellationToken);
 }
