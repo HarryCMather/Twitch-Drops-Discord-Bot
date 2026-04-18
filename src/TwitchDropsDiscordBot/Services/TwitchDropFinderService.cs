@@ -39,13 +39,21 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
             return dropsForRequestedGames;
         }
 
-        Dictionary<string, short> existingDropOwners = await _dropOwnerRepository.GetDropOwnersMapAsync(cancellationToken);
-
         try
         {
             _logger.LogInformation("Checking for new Twitch drops...");
-            List<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync(cancellationToken);
-            dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners, cancellationToken);
+
+            // I would consider adding the above GetGamesAsync call to this, but if there aren't any games to alert on then we've wasted a call to
+            // the third-party (by the GetDropsAsync) call:
+            Task<List<Drop>> getDropsTask = _twitchDropsFinderRepository.GetDropsAsync(cancellationToken);
+            Task<Dictionary<string, short>> getDropOwnersMapTask = _dropOwnerRepository.GetDropOwnersMapAsync(cancellationToken);
+            await Task.WhenAll(getDropsTask, getDropOwnersMapTask);
+
+            // Whilst this looks like a double await, as these tasks have already ran to completion, this will short-circuit the async state machine:
+            List<Drop> drops = await getDropsTask;
+            Dictionary<string, short> existingDropOwnersMap = await getDropOwnersMapTask;
+
+            dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwnersMap, cancellationToken);
         }
         catch (HttpRequestException ex)
         {
