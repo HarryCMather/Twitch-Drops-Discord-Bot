@@ -118,7 +118,7 @@ internal class Program
         {
             IGamesRepository gamesRepository = serviceScope.ServiceProvider.GetRequiredService<IGamesRepository>();
 
-            IEnumerable<string> existingGames = await gamesRepository.GetExistingMatchingGamesAsync(gameNamesToSeed);
+            IEnumerable<string> existingGames = await gamesRepository.GetExistingMatchingGamesAsync(gameNamesToSeed, CancellationToken.None);
             List<Game> games = gameNamesToSeed.Except(existingGames)
                                               .Select(gameName => new Game
                                               {
