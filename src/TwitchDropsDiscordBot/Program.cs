@@ -48,7 +48,9 @@ internal class Program
 
         builder.Services.AddDbContext<TwitchDropsBotDbContext>(dbContextOptions => dbContextOptions.UseNpgsql(builder.Configuration.GetConnectionString("Postgresql"))
                                                                                                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
-                                                                                                   .UseSnakeCaseNamingConvention());
+                                                                                                   .UseSnakeCaseNamingConvention()
+                                                                                                   .EnableDetailedErrors(false)
+                                                                                                   .EnableSensitiveDataLogging(false));
 
         bool isDevelopment = builder.Environment.IsDevelopment();
         string hostname = Environment.MachineName;
