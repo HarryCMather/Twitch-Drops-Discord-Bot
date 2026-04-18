@@ -46,7 +46,6 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
         try
         {
             await using (AsyncServiceScope scope = _serviceScopeFactory.CreateAsyncScope())
-            using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
             {
                 // The types of configuration I am using here could change in appsettings.json between requests.
                 // I was previously handling this by manually re-loading Settings through a Settings Repository before.
