@@ -51,7 +51,7 @@ public sealed class DiscordNotificationService : INotificationService
             // as this ensures we stay below Discord's rate limits and ensure we don't spam them.
             // If there's only 1 notification to send, the app is realistically going to be waiting minutes before checking/trying again,
             // and this shouldn't be called that often.
-            bool shouldWaitBetweenNotifications = drops.Count > 0;
+            bool shouldWaitBetweenNotifications = drops.Count > 1;
 
             foreach (Drop drop in drops)
             {
