@@ -1,8 +1,10 @@
-﻿namespace TwitchDropsDiscordBot.Persistence.Interfaces;
+﻿using TwitchDropsDiscordBot.Models.Entities;
+
+namespace TwitchDropsDiscordBot.Persistence.Interfaces;
 
 public interface IDropOwnerRepository
 {
     Task<Dictionary<string, short>> GetDropOwnersMapAsync(CancellationToken cancellationToken);
 
-    Task<short> InsertDropOwnerAsync(string dropOwnerName, CancellationToken cancellationToken);
+    Task<List<DropOwner>> InsertNewDropOwnersAsync(List<string> newOwnerNames, CancellationToken cancellationToken);
 }

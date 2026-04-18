@@ -56,7 +56,8 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
             List<Drop> dropsPassingInitialFiltering = [];
             List<Guid> timeBasedDropIds = [];
             PopulateDropsFromInitialInMemoryFiltering(foundDrops, dropsPassingInitialFiltering, timeBasedDropIds, existingGameNames, requestedGameNamesSet, foundGameNames, currentUtcDateTime);
-            await PopulateDropsWithUnalertedTimeBasedDropsAsync(dropsPassingInitialFiltering, dropsFilterResult.ValidDrops, timeBasedDropIds, gamesMap, existingDropOwners, cancellationToken);
+            await PopulateDropsWithUnalertedTimeBasedDropsAsync(dropsPassingInitialFiltering, dropsFilterResult.ValidDrops, timeBasedDropIds, cancellationToken);
+            await PopulateDropsWithForeignKeyIdsAsync(dropsFilterResult.ValidDrops, existingDropOwners, gamesMap, cancellationToken);
 
             dropsFilterResult.NewGames.AddRange(foundGameNames.Select(gameName => new Game
             {
@@ -69,12 +70,12 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
     }
 
     private static void PopulateDropsFromInitialInMemoryFiltering(IEnumerable<Drop> foundDrops,
-                                                           List<Drop> newDrops,
-                                                           List<Guid> timeBasedDropIds,
-                                                           HashSet<string> existingGameNames,
-                                                           HashSet<string> requestedGameNamesSet,
-                                                           HashSet<string> foundGameNames,
-                                                           DateTimeOffset currentUtcDateTime)
+                                                                  List<Drop> newDrops,
+                                                                  List<Guid> timeBasedDropIds,
+                                                                  HashSet<string> existingGameNames,
+                                                                  HashSet<string> requestedGameNamesSet,
+                                                                  HashSet<string> foundGameNames,
+                                                                  DateTimeOffset currentUtcDateTime)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
@@ -105,10 +106,8 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
     }
 
     private async Task PopulateDropsWithUnalertedTimeBasedDropsAsync(List<Drop> dropsPassingInitialFiltering,
-                                                                     List<Drop> finalDrops,
+                                                                     List<Drop> outputDrops,
                                                                      List<Guid> timeBasedDropIds,
-                                                                     Dictionary<string, short> gamesMap,
-                                                                     Dictionary<string, short> existingDropOwners,
                                                                      CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
@@ -128,30 +127,43 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
                 }
 
                 _logger.LogInformation("Found drop for game '{GameName}'", drop.GameName);
-
-                drop.DropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(drop.Owner, existingDropOwners, cancellationToken);
-                drop.GameId = gamesMap[drop.GameName];
-                finalDrops.Add(drop);
+                outputDrops.Add(drop);
             }
         }
     }
 
-    private async ValueTask<short> GetDropOwnerIdFromDropOwnerNameAsync(string dropOwnerName, Dictionary<string, short> existingDropOwners, CancellationToken cancellationToken)
+    private async Task PopulateDropsWithForeignKeyIdsAsync(List<Drop> drops,
+                                                           Dictionary<string, short> dropOwnersMap,
+                                                           Dictionary<string, short> gamesMap,
+                                                           CancellationToken cancellationToken)
     {
-        // I've opted to use ValueTask here, as the likelihood of a DB insert being required is minimal after the first few runs.
-        // so the likelihood is the async flow will never be hit.
-        // This is because the Drop Owner is usually the Game Publisher, which won't change.
-        // This also helps ensure this doesn't become an N+1 problem.
-
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            if (!existingDropOwners.TryGetValue(dropOwnerName, out short dropOwnerId))
-            {
-                dropOwnerId = await _dropOwnerRepository.InsertDropOwnerAsync(dropOwnerName, cancellationToken);
-                existingDropOwners.Add(dropOwnerName, dropOwnerId);
-            }
+            await InsertNewDropOwnersIfNeeded(drops, dropOwnersMap, cancellationToken);
 
-            return dropOwnerId;
+            foreach (Drop drop in drops)
+            {
+                drop.DropOwnerId = dropOwnersMap[drop.Owner];
+                drop.GameId = gamesMap[drop.GameName];
+            }
+        }
+    }
+
+    private async Task InsertNewDropOwnersIfNeeded(List<Drop> drops, Dictionary<string, short> dropOwners, CancellationToken cancellationToken)
+    {
+        List<string> newDropOwnerNames = drops.Select(drop => drop.Owner)
+                                              .Distinct()
+                                              .Except(dropOwners.Keys)
+                                              .ToList();
+
+        if (newDropOwnerNames.Count > 0)
+        {
+            List<DropOwner> newDropOwners = await _dropOwnerRepository.InsertNewDropOwnersAsync(newDropOwnerNames, cancellationToken);
+
+            foreach (DropOwner newDropOwner in newDropOwners)
+            {
+                dropOwners.Add(newDropOwner.Name, newDropOwner.Id);
+            }
         }
     }
 

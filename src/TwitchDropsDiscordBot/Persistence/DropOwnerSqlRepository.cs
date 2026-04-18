@@ -1,7 +1,5 @@
-﻿using System.Diagnostics;
-using EFCore.BulkExtensions;
+﻿using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TwitchDropsDiscordBot.Contexts;
 using TwitchDropsDiscordBot.Models.Entities;
 using TwitchDropsDiscordBot.Persistence.Interfaces;
@@ -24,17 +22,16 @@ public sealed class DropOwnerSqlRepository : IDropOwnerRepository
                                                              cancellationToken);
     }
 
-    public async Task<short> InsertDropOwnerAsync(string dropOwnerName, CancellationToken cancellationToken)
+    public async Task<List<DropOwner>> InsertNewDropOwnersAsync(List<string> newOwnerNames, CancellationToken cancellationToken)
     {
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        IEnumerable<DropOwner> dropOwnersToInsert = newOwnerNames.Select(ownerName => new DropOwner
         {
-            EntityEntry<DropOwner> insertedEntity = await _dbContext.DropOwners.AddAsync(new DropOwner
-            {
-                Name = dropOwnerName
-            }, cancellationToken);
+            Name = ownerName
+        });
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return insertedEntity.Entity.Id;
-        }
+        await _dbContext.BulkInsertAsync(dropOwnersToInsert, cancellationToken: cancellationToken);
+
+        IQueryable<DropOwner> query = _dbContext.DropOwners.Where(dropOwner => newOwnerNames.Contains(dropOwner.Name));
+        return await query.ToListAsync(cancellationToken);
     }
 }
