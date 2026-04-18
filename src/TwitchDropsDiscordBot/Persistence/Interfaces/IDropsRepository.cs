@@ -4,7 +4,7 @@ namespace TwitchDropsDiscordBot.Persistence.Interfaces;
 
 public interface IDropsRepository
 {
-    Task<bool> HasDropNotificationBeenSentAsync(Guid dropId, Guid timeBasedDropId, CancellationToken cancellationToken);
+    Task<HashSet<Guid>> GetUnalertedTimeBasedDropsAsync(List<Guid> timeBasedDropIds, CancellationToken cancellationToken);
 
     Task InsertNewDropsAsync(List<Drop> drops, CancellationToken cancellationToken);
 

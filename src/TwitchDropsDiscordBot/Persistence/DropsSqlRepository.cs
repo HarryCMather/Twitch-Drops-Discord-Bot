@@ -16,19 +16,25 @@ public class DropsSqlRepository : IDropsRepository
         _dbContext = dbContext;
     }
 
-    public async Task<bool> HasDropNotificationBeenSentAsync(Guid dropId, Guid timeBasedDropId, CancellationToken cancellationToken)
+    public async Task<HashSet<Guid>> GetUnalertedTimeBasedDropsAsync(List<Guid> timeBasedDropIds, CancellationToken cancellationToken)
     {
-        // Whilst this isn't going to be an issue considering the small scale of this application,
-        // It would be more performant to get a list of all drops to check and do this in 1 database call,
-        // compared to this code, which is performing an Any check for every valid drop/timeBasedDropId.
-        // This shouldn't be a problem here, as only a few drops per week/month will realistically ever hit this stage.
-
+        // I've opted to use SQL here instead of EF directly, as it was producing sub-optimal execution plans, or attempting to load the whole dbset into memory.
+        // This is something that Postgres is capable of handling, and I'd rather the extra control here.  This table will grow the most out of all the db tables,
+        // so I need to avoid loading the contents into RAM for every call here:
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            return await _dbContext.TimeBasedDrops.AnyAsync(timeBasedDrop => timeBasedDrop.Id == timeBasedDropId &&
-                                                                             timeBasedDrop.ParentDropId == dropId &&
-                                                                             timeBasedDrop.AlertedOn == null,
-                                                            cancellationToken: cancellationToken);
+            IQueryable<Guid> query = _dbContext.Database.SqlQuery<Guid>($"""
+                                                                         SELECT input.id
+                                                                         FROM unnest({timeBasedDropIds}::uuid[]) AS input(id)
+                                                                         WHERE NOT EXISTS (
+                                                                              SELECT 1
+                                                                              FROM time_based_drops tbd
+                                                                              WHERE tbd.id = input.id
+                                                                              LIMIT 1
+                                                                         )
+                                                                         """);
+
+            return await query.ToHashSetAsync(cancellationToken);
         }
     }
 
