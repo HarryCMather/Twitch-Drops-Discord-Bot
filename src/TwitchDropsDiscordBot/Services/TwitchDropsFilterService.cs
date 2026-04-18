@@ -31,6 +31,11 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
                                                           Dictionary<string, short> gamesMap,
                                                           Dictionary<string, short> existingDropOwners)
     {
+        ArgumentNullException.ThrowIfNull(foundDrops);
+        ArgumentNullException.ThrowIfNull(existingGameNames);
+        ArgumentNullException.ThrowIfNull(gamesMap);
+        ArgumentNullException.ThrowIfNull(existingDropOwners);
+
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
             DropsFilterResult dropsFilterResult = new()

@@ -38,13 +38,15 @@ public sealed class DiscordNotificationService : INotificationService
 
     public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<Drop> drops)
     {
-        if (!_discordBotClient.IsInitialized)
-        {
-            await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
-        }
-
+        ArgumentNullException.ThrowIfNull(drops);
+        
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
+            if (!_discordBotClient.IsInitialized)
+            {
+                await _discordBotClient.InitializeAsync(discordBotToken, discordBotChannelId);
+            }
+
             // I should wait between sending Discord notifications, but this is only necessary if there's more than 1 notification to send,
             // as this ensures we stay below Discord's rate limits and ensure we don't spam them.
             // If there's only 1 notification to send, the app is realistically going to be waiting minutes before checking/trying again,
