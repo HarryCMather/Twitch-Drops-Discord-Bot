@@ -30,36 +30,33 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
 
     public async Task<List<Drop>> FindNewDropsAsync(CancellationToken cancellationToken)
     {
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
+        List<Drop> dropsForRequestedGames = [];
+
+        List<Game> games = await _gamesRepository.GetGamesAsync(cancellationToken);
+        if (!games.Exists(game => game.ShouldAlert))
         {
-            List<Drop> dropsForRequestedGames = [];
-
-            List<Game> games = await _gamesRepository.GetGamesAsync(cancellationToken);
-            if (!games.Exists(game => game.ShouldAlert))
-            {
-                _logger.LogWarning("No alertable games were set in the database. Skipping this iteration");
-                return dropsForRequestedGames;
-            }
-
-            Dictionary<string, short> existingDropOwners = await _dropOwnerRepository.GetDropOwnersMapAsync(cancellationToken);
-
-            try
-            {
-                _logger.LogInformation("Checking for new Twitch drops...");
-                List<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync(cancellationToken);
-                dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners, cancellationToken);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "Failed to find new drops.  Faulted with a HTTP Request Exception: {StatusCode} - {Message}", ex.StatusCode, ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to find new drops.  Faulted with an unknown error: {Message}", ex.Message);
-            }
-
+            _logger.LogWarning("No alertable games were set in the database. Skipping this iteration");
             return dropsForRequestedGames;
         }
+
+        Dictionary<string, short> existingDropOwners = await _dropOwnerRepository.GetDropOwnersMapAsync(cancellationToken);
+
+        try
+        {
+            _logger.LogInformation("Checking for new Twitch drops...");
+            List<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync(cancellationToken);
+            dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Failed to find new drops.  Faulted with a HTTP Request Exception: {StatusCode} - {Message}", ex.StatusCode, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to find new drops.  Faulted with an unknown error: {Message}", ex.Message);
+        }
+
+        return dropsForRequestedGames;
     }
 
     private async Task<List<Drop>> ExtractDropsForRequestedGames(List<Drop> drops, List<Game> games, Dictionary<string, short> dropOwnersMap, CancellationToken cancellationToken)

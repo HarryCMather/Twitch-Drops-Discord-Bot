@@ -21,21 +21,18 @@ public class DropsSqlRepository : IDropsRepository
         // I've opted to use SQL here instead of EF directly, as it was producing sub-optimal execution plans, or attempting to load the whole dbset into memory.
         // This is something that Postgres is capable of handling, and I'd rather the extra control here.  This table will grow the most out of all the db tables,
         // so I need to avoid loading the contents into RAM for every call here:
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
-        {
-            IQueryable<Guid> query = _dbContext.Database.SqlQuery<Guid>($"""
-                                                                         SELECT input.id
-                                                                         FROM unnest({timeBasedDropIds}::uuid[]) AS input(id)
-                                                                         WHERE NOT EXISTS (
-                                                                              SELECT 1
-                                                                              FROM time_based_drops tbd
-                                                                              WHERE tbd.id = input.id
-                                                                              LIMIT 1
-                                                                         )
-                                                                         """);
+        IQueryable<Guid> query = _dbContext.Database.SqlQuery<Guid>($"""
+                                                                     SELECT input.id
+                                                                     FROM unnest({timeBasedDropIds}::uuid[]) AS input(id)
+                                                                     WHERE NOT EXISTS (
+                                                                          SELECT 1
+                                                                          FROM time_based_drops tbd
+                                                                          WHERE tbd.id = input.id
+                                                                          LIMIT 1
+                                                                     )
+                                                                     """);
 
-            return await query.ToHashSetAsync(cancellationToken);
-        }
+        return await query.ToHashSetAsync(cancellationToken);
     }
 
     public async Task InsertNewDropsAsync(List<Drop> drops, CancellationToken cancellationToken)
@@ -62,10 +59,6 @@ public class DropsSqlRepository : IDropsRepository
         // I'm opting not to perform a similar contains check to what I wrote for InsertNewDropsAsync
         // because I've already enforced when validating and parsing the drops within the TwitchDropsFinder service
         // that existing TimeBasedDrops will be filtered out early:
-
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
-        {
-            await _dbContext.BulkInsertAsync(timeBasedDrops, cancellationToken: cancellationToken);
-        }
+        await _dbContext.BulkInsertAsync(timeBasedDrops, cancellationToken: cancellationToken);
     }
 }

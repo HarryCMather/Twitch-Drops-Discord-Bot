@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TwitchDropsDiscordBot.Contexts;
@@ -18,12 +19,9 @@ public sealed class DropOwnerSqlRepository : IDropOwnerRepository
 
     public async Task<Dictionary<string, short>> GetDropOwnersMapAsync(CancellationToken cancellationToken)
     {
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
-        {
-            return await _dbContext.DropOwners.ToDictionaryAsync(dropOwner => dropOwner.Name,
-                                                                              dropOwner => dropOwner.Id,
-                                                                 cancellationToken);
-        }
+        return await _dbContext.DropOwners.ToDictionaryAsync(dropOwner => dropOwner.Name,
+                                                                          dropOwner => dropOwner.Id,
+                                                             cancellationToken);
     }
 
     public async Task<short> InsertDropOwnerAsync(string dropOwnerName, CancellationToken cancellationToken)

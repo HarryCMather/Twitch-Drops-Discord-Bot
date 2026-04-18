@@ -35,17 +35,14 @@ public sealed class DiscordEmbedBuilderService : IEmbedBuilderService
 
     public Embed BuildEmbedForTwitchDropReward(Drop drop)
     {
-        using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
-        {
-            EmbedBuilder embedBuilder = new();
+        EmbedBuilder embedBuilder = new();
 
-            AddDropRewardInitialDetails(embedBuilder, drop);
-            AddDropRewardBaseDetails(embedBuilder, drop);
-            AddDropRewardTimeBasedDrops(embedBuilder, drop.TimeBasedDrops);
-            AddDropRewardLinks(embedBuilder, drop);
+        AddDropRewardInitialDetails(embedBuilder, drop);
+        AddDropRewardBaseDetails(embedBuilder, drop);
+        AddDropRewardTimeBasedDrops(embedBuilder, drop.TimeBasedDrops);
+        AddDropRewardLinks(embedBuilder, drop);
 
-            return embedBuilder.Build();
-        }
+        return embedBuilder.Build();
     }
 
     private void AddDropRewardInitialDetails(EmbedBuilder embedBuilder, Drop drop)
