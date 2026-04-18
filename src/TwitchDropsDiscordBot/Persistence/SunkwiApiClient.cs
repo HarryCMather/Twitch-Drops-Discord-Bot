@@ -15,7 +15,7 @@ public sealed class SunkwiApiClient : ITwitchDropFinderRepository
         _httpClient = httpClient;
     }
 
-    public async Task<IEnumerable<Drop>> GetDropsAsync()
+    public async Task<List<Drop>> GetDropsAsync()
     {
         const string requestUrl = "https://twitch-drops-api.sunkwi.com/drops";
 
