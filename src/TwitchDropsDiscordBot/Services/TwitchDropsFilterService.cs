@@ -29,7 +29,8 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
                                                           HashSet<string> existingGameNames,
                                                           List<Game> alertableGames,
                                                           Dictionary<string, short> gamesMap,
-                                                          Dictionary<string, short> existingDropOwners)
+                                                          Dictionary<string, short> existingDropOwners,
+                                                          CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(foundDrops);
         ArgumentNullException.ThrowIfNull(existingGameNames);
@@ -73,12 +74,12 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
                 {
                     // Performing this check separately as this call will be more expensive, and is realistically unlikely to return any data most of the time:
                     // This should be refactored in-future:
-                    drop.TimeBasedDrops = await GetUnalertedTimeBasedDropsAsync(drop);
+                    drop.TimeBasedDrops = await GetUnalertedTimeBasedDropsAsync(drop, cancellationToken);
                     if (drop.TimeBasedDrops.Count > 0)
                     {
                         _logger.LogInformation("Found drop for game '{GameName}'", drop.GameName);
 
-                        drop.DropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(drop.Owner, existingDropOwners);
+                        drop.DropOwnerId = await GetDropOwnerIdFromDropOwnerNameAsync(drop.Owner, existingDropOwners, cancellationToken);
                         drop.GameId = gamesMap[drop.GameName];
                         dropsFilterResult.ValidDrops.Add(drop);
                     }
@@ -95,7 +96,7 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
         }
     }
 
-    private async ValueTask<short> GetDropOwnerIdFromDropOwnerNameAsync(string dropOwnerName, Dictionary<string, short> existingDropOwners)
+    private async ValueTask<short> GetDropOwnerIdFromDropOwnerNameAsync(string dropOwnerName, Dictionary<string, short> existingDropOwners, CancellationToken cancellationToken)
     {
         // I've opted to use ValueTask here, as the likelihood of a DB insert being required is minimal after the first few runs.
         // so the likelihood is the async flow will never be hit.
@@ -106,7 +107,7 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
         {
             if (!existingDropOwners.TryGetValue(dropOwnerName, out short dropOwnerId))
             {
-                dropOwnerId = await _dropOwnerRepository.InsertDropOwnerAsync(dropOwnerName);
+                dropOwnerId = await _dropOwnerRepository.InsertDropOwnerAsync(dropOwnerName, cancellationToken);
                 existingDropOwners.Add(dropOwnerName, dropOwnerId);
             }
 
@@ -135,7 +136,7 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
         return timeBasedDrops.Count > 0;
     }
 
-    private async Task<List<TimeBasedDrop>> GetUnalertedTimeBasedDropsAsync(Drop drop)
+    private async Task<List<TimeBasedDrop>> GetUnalertedTimeBasedDropsAsync(Drop drop, CancellationToken cancellationToken)
     {
         // The main aim here is to avoid processing drops that we've already alerted on.
         // TODO: REFACTOR THIS IN-FUTURE TO AVOID N+1 QUERY LOOPING.  THIS SHOULDN'T BE TOO MUCH OF AN ISSUE HERE, AS MOST DROPS HAVE ALREADY BEEN FILTERED OUT BY THIS STAGE.
@@ -145,7 +146,7 @@ public sealed class TwitchDropsFilterService : ITwitchDropsFilterService
             List<TimeBasedDrop> unalertedDrops = [];
             foreach (TimeBasedDrop timeBasedDrop in drop.TimeBasedDrops)
             {
-                bool alreadyAlerted = await _dropsRepository.HasDropNotificationBeenSentAsync(drop.Id, timeBasedDrop.Id);
+                bool alreadyAlerted = await _dropsRepository.HasDropNotificationBeenSentAsync(drop.Id, timeBasedDrop.Id, cancellationToken);
                 if (!alreadyAlerted)
                 {
                     unalertedDrops.Add(timeBasedDrop);

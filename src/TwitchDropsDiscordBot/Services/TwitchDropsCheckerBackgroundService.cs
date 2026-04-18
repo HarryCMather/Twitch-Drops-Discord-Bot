@@ -31,13 +31,13 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            TimeSpan waitDuration = await CheckForDropsAsync();
+            TimeSpan waitDuration = await CheckForDropsAsync(stoppingToken);
             _logger.LogInformation("Waiting for {WaitDurationMinutes} minutes before checking for new drops again", waitDuration.TotalMinutes);
             await Task.Delay(waitDuration, stoppingToken);
         }
     }
 
-    private async Task<TimeSpan> CheckForDropsAsync()
+    private async Task<TimeSpan> CheckForDropsAsync(CancellationToken cancellationToken)
     {
         TimeSpan? waitDuration = null;
 
@@ -57,7 +57,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                 waitDuration = GetWaitDelayDuration(botConfiguration.DelayBetweenChecksInMinutes);
 
                 ITwitchDropFinderService twitchDropFinderService = scope.ServiceProvider.GetRequiredService<ITwitchDropFinderService>();
-                List<Drop> newDrops = await twitchDropFinderService.FindNewDropsAsync();
+                List<Drop> newDrops = await twitchDropFinderService.FindNewDropsAsync(cancellationToken);
 
                 if (newDrops.Count > 0)
                 {
@@ -66,7 +66,7 @@ public sealed class TwitchDropsCheckerBackgroundService : BackgroundService
                     DiscordConfiguration discordConfiguration = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<DiscordConfiguration>>().Value;
                     await using (INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>())
                     {
-                        await notificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops);
+                        await notificationService.SendTwitchDropNotificationsAsync(discordConfiguration.BotToken, discordConfiguration.TargetChannelId, newDrops, cancellationToken);
                     }
 
                     _logger.LogInformation("Finished sending notifications for new drops");

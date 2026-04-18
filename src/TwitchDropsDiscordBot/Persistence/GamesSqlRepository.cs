@@ -16,30 +16,30 @@ public sealed class GamesSqlRepository : IGamesRepository
         _dbContext = dbContext;
     }
 
-    public async Task<List<Game>> GetGamesAsync()
+    public async Task<List<Game>> GetGamesAsync(CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
             IQueryable<Game> query = _dbContext.Games;
-            return await query.ToListAsync();
+            return await query.ToListAsync(cancellationToken);
         }
     }
 
-    public async Task<IEnumerable<string>> GetExistingMatchingGamesAsync(List<string> gameNames)
+    public async Task<IEnumerable<string>> GetExistingMatchingGamesAsync(List<string> gameNames, CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
             IQueryable<string> query = _dbContext.Games.Where(dbGame => gameNames.Contains(dbGame.Name))
                                                        .Select(game => game.Name);
-            return await query.ToListAsync();
+            return await query.ToListAsync(cancellationToken);
         }
     }
 
-    public async Task InsertGamesAsync(IEnumerable<Game> games)
+    public async Task InsertGamesAsync(IEnumerable<Game> games, CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            await _dbContext.BulkInsertAsync(games);
+            await _dbContext.BulkInsertAsync(games, cancellationToken: cancellationToken);
         }
     }
 }

@@ -28,26 +28,26 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
         _logger = logger;
     }
 
-    public async Task<List<Drop>> FindNewDropsAsync()
+    public async Task<List<Drop>> FindNewDropsAsync(CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
             List<Drop> dropsForRequestedGames = [];
 
-            List<Game> games = await _gamesRepository.GetGamesAsync();
+            List<Game> games = await _gamesRepository.GetGamesAsync(cancellationToken);
             if (!games.Exists(game => game.ShouldAlert))
             {
                 _logger.LogWarning("No alertable games were set in the database. Skipping this iteration");
                 return dropsForRequestedGames;
             }
 
-            Dictionary<string, short> existingDropOwners = await _dropOwnerRepository.GetDropOwnersMapAsync();
+            Dictionary<string, short> existingDropOwners = await _dropOwnerRepository.GetDropOwnersMapAsync(cancellationToken);
 
             try
             {
                 _logger.LogInformation("Checking for new Twitch drops...");
-                List<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync();
-                dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners);
+                List<Drop> drops = await _twitchDropsFinderRepository.GetDropsAsync(cancellationToken);
+                dropsForRequestedGames = await ExtractDropsForRequestedGames(drops, games, existingDropOwners, cancellationToken);
             }
             catch (HttpRequestException ex)
             {
@@ -62,7 +62,7 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
         }
     }
 
-    private async Task<List<Drop>> ExtractDropsForRequestedGames(List<Drop> drops, List<Game> games, Dictionary<string, short> dropOwnersMap)
+    private async Task<List<Drop>> ExtractDropsForRequestedGames(List<Drop> drops, List<Game> games, Dictionary<string, short> dropOwnersMap, CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
@@ -72,10 +72,10 @@ public sealed class TwitchDropFinderService : ITwitchDropFinderService
             Dictionary<string, short> gamesMap = alertableGames.ToDictionary(game => game.Name,
                                                                                      game => game.Id);
 
-            DropsFilterResult dropsFilterResult = await _twitchDropsFilterService.FilterDropsAsync(drops, existingGameNames, alertableGames, gamesMap, dropOwnersMap);
+            DropsFilterResult dropsFilterResult = await _twitchDropsFilterService.FilterDropsAsync(drops, existingGameNames, alertableGames, gamesMap, dropOwnersMap, cancellationToken);
             if (dropsFilterResult.NewGames.Count > 0)
             {
-                await _gamesRepository.InsertGamesAsync(dropsFilterResult.NewGames);
+                await _gamesRepository.InsertGamesAsync(dropsFilterResult.NewGames, cancellationToken);
             }
 
             return dropsFilterResult.ValidDrops;

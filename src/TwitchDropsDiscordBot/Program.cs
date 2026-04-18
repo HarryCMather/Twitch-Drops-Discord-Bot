@@ -129,7 +129,7 @@ internal class Program
 
             if (games.Count > 0)
             {
-                await gamesRepository.InsertGamesAsync(games);
+                await gamesRepository.InsertGamesAsync(games, CancellationToken.None);
             }
         }
     }

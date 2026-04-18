@@ -15,13 +15,13 @@ public sealed class SunkwiApiClient : ITwitchDropFinderRepository
         _httpClient = httpClient;
     }
 
-    public async Task<List<Drop>> GetDropsAsync()
+    public async Task<List<Drop>> GetDropsAsync(CancellationToken cancellationToken)
     {
         const string requestUrl = "https://twitch-drops-api.sunkwi.com/drops";
 
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            IAsyncEnumerable<GetDropsResponse> getDropsResponse = _httpClient.GetFromJsonAsAsyncEnumerable<GetDropsResponse>(requestUrl);
+            IAsyncEnumerable<GetDropsResponse> getDropsResponse = _httpClient.GetFromJsonAsAsyncEnumerable<GetDropsResponse>(requestUrl, cancellationToken);
 
             List<Drop> drops = [];
             await foreach (GetDropsResponse apiDrop in getDropsResponse)

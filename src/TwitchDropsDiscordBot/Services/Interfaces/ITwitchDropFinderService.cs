@@ -4,5 +4,5 @@ namespace TwitchDropsDiscordBot.Services.Interfaces;
 
 public interface ITwitchDropFinderService
 {
-    Task<List<Drop>> FindNewDropsAsync();
+    Task<List<Drop>> FindNewDropsAsync(CancellationToken cancellationToken);
 }

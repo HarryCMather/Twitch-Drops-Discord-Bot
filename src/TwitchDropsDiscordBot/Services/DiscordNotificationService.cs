@@ -36,10 +36,10 @@ public sealed class DiscordNotificationService : INotificationService
         await _discordBotClient.SendMessageAsync(embed);
     }
 
-    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<Drop> drops)
+    public async Task SendTwitchDropNotificationsAsync(string discordBotToken, ulong discordBotChannelId, List<Drop> drops, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(drops);
-        
+
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
             if (!_discordBotClient.IsInitialized)
@@ -59,13 +59,13 @@ public sealed class DiscordNotificationService : INotificationService
 
                 if (shouldWaitBetweenNotifications)
                 {
-                    await WaitBetweenSendingDropNotificationsAsync();
+                    await WaitBetweenSendingDropNotificationsAsync(cancellationToken);
                 }
             }
 
             IEnumerable<TimeBasedDrop> timeBasedDrops = drops.SelectMany(drop => drop.TimeBasedDrops);
-            await _dropsRepository.InsertNewDropsAsync(drops);
-            await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops);
+            await _dropsRepository.InsertNewDropsAsync(drops, cancellationToken);
+            await _dropsRepository.InsertTimeBasedDropsAsync(timeBasedDrops, cancellationToken);
         }
     }
 
@@ -89,11 +89,12 @@ public sealed class DiscordNotificationService : INotificationService
         await _discordBotClient.DisposeAsync();
     }
 
-    private static async Task WaitBetweenSendingDropNotificationsAsync()
+    private static async Task WaitBetweenSendingDropNotificationsAsync(CancellationToken cancellationToken)
     {
         using (Activity.Current?.Source?.StartActivity(ActivityKind.Server))
         {
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            TimeSpan delayDuration = TimeSpan.FromSeconds(1);
+            await Task.Delay(delayDuration, cancellationToken);
         }
     }
 }
