@@ -28,7 +28,10 @@ internal class Program
 
         builder.Logging.ClearProviders();
         LogManager.Setup().LoadConfigurationFromFile("NLog.config");
-        builder.UseNLog();
+        builder.Logging.AddNLogWeb(new NLogAspNetCoreOptions
+        {
+            RemoveLoggerFactoryFilter = false
+        });
 
         builder.Services.Configure<ServiceProviderOptions>(options =>
         {
