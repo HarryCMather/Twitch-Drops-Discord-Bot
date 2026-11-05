@@ -4,6 +4,16 @@
 namespace TwitchDropsDiscordBot.Models.SunkwiApi;
 
 /// <summary>
+/// Represents the body of the Sunkwi GetDrops endpoint, which lists the games in "games".
+/// Documentation: https://drops.sunkwi.com/docs
+/// </summary>
+public sealed class GetDropsListResponse
+{
+    [JsonPropertyName("games")]
+    public List<GetDropsResponse> Games { get; init; }
+}
+
+/// <summary>
 /// Represents the Sunkwi GetDrops endpoint response.
 /// More information is available in on the Sunkwi GitHub:
 /// https://github.com/SunkwiBOT/twitch-drops-api
